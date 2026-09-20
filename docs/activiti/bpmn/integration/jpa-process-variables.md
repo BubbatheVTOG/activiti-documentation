@@ -158,6 +158,7 @@ When `setVariable` is called, Activiti detects the `@Entity` annotation and auto
 
 ```xml
 <serviceTask id="createLoanRequest"
+             xmlns:activiti="http://activiti.org/bpmn"
              activiti:expression="${loanRequestBean.newLoanRequest(customerName, amount)}"
              activiti:resultVariable="loanRequest"/>
 ```
@@ -182,6 +183,7 @@ Because `getVariable` returns a managed entity, changes are automatically tracke
 
 ```xml
 <serviceTask id="approveDecision"
+             xmlns:activiti="http://activiti.org/bpmn"
              activiti:expression="${loanRequest.setApproved(approvedByManager)}"/>
 ```
 
@@ -195,9 +197,13 @@ Activiti supports storing lists of JPA entities as process variables. All entiti
 List<LoanRequest> requests = loanRequestService.findAllActive();
 execution.setVariable("loanRequests", requests);
 
-// Retrieval — elements are JPA entities, cast as needed
+// Retrieval — elements are JPA entities
 List<?> retrieved = execution.getVariable("loanRequests", List.class);
-LoanRequest first = (LoanRequest) retrieved.get(0);
+// The list is guaranteed non-empty: empty lists are not storable (see Edge cases)
+Object element = retrieved.get(0);
+if (element instanceof LoanRequest firstRequest) {
+    // use firstRequest
+}
 ```
 
 The list type is `jpa-entity-list`. It stores the entity class name in the `TEXT_` column and a serialized array of primary key values in the `BYTEARRAY_ID_` column (not `TEXT2_`). The serialization uses Java's `ObjectOutputStream` to write a `String[]`.
@@ -262,20 +268,20 @@ graph TD
 
 When a process instance completes, variable values are moved to history tables (`ACT_HI_VARINST`). Activiti uses `HistoricJPAEntityVariableType` and `HistoricJPAEntityListVariableType` to handle historical JPA entity variables.
 
-These historic variants **override `isCachable()` to return `true`**, unlike the runtime types which are not cached by default (`forceCacheable = false`). This difference is important:
+These historic variants **override `isCachable()` to return `true`**, unlike the runtime types which are not cached by default (`forceCacheable = false`). This difference matters, but it is not what it might sound like:
 
-- **Runtime (`jpa-entity`)**: Not cacheable by default — each `getVariable()` call triggers a fresh `EntityManager.find()`, ensuring the latest database state
-- **Historic (`jpa-entity`)**: Cacheable — the entity snapshot is cached because the entity may no longer exist in the production database when the history is queried
+- **Runtime (`jpa-entity`)**: Not cacheable — each `getVariable()` call triggers a fresh `EntityManager.find()`, ensuring the latest database state
+- **Historic (`jpa-entity`)**: Cacheable — a value already resolved in the current session can be served from the engine's variable cache instead of re-fetched. The historic type still inherits the same `getValue()` as the runtime type, so it stores **no snapshot** — the history tables hold the same class name + primary key reference. A cold-cache access still goes through `EntityManager.find()`, and if the production row has since been deleted it fails with the same `Entity does not exist` error as a runtime read
 
 ```java
-// Historical query — the entity snapshot may be cached
+// Historical query — resolved values may be served from the session cache
 List<HistoricVariableInstance> history = historyService
     .createHistoricVariableInstanceQuery()
     .variableName("loanRequest")
     .list();
 ```
 
-If you need the most up-to-date entity data during historical queries, the cache ensures the value is still available even if the underlying database record has been deleted.
+Do not rely on historic JPA variables for data that may have been deleted: if you need the entity in a historical context, capture the fields you need into plain variables while the process is running.
 
 ## Complete Example
 
@@ -286,23 +292,23 @@ Process definition (`LoanRequestProcess.bpmn20.xml`):
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:activiti="http://activiti.org/bpmn"
-             targetNamespace="Examples">
+             targetNamespace="http://example.com/loan-request">
 
     <process id="LoanRequestProcess" name="Loan Request Process">
         <startEvent id="theStart"/>
-        <sequenceFlow sourceRef="theStart" targetRef="createLoanRequest"/>
+        <sequenceFlow id="toCreateLoanRequest" sourceRef="theStart" targetRef="createLoanRequest"/>
 
         <serviceTask id="createLoanRequest"
                      activiti:expression="${loanRequestBean.newLoanRequest(customerName, amount)}"
                      activiti:resultVariable="loanRequest"/>
-        <sequenceFlow sourceRef="createLoanRequest" targetRef="approveTask"/>
+        <sequenceFlow id="toApproveTask" sourceRef="createLoanRequest" targetRef="approveTask"/>
 
         <userTask id="approveTask" name="Approve or Reject Loan Request"/>
-        <sequenceFlow sourceRef="approveTask" targetRef="storeDecision"/>
+        <sequenceFlow id="toStoreDecision" sourceRef="approveTask" targetRef="storeDecision"/>
 
         <serviceTask id="storeDecision"
                      activiti:expression="${loanRequest.setApproved(approvedByManager)}"/>
-        <sequenceFlow sourceRef="storeDecision" targetRef="approvalGateway"/>
+        <sequenceFlow id="toApprovalGateway" sourceRef="storeDecision" targetRef="approvalGateway"/>
 
         <exclusiveGateway id="approvalGateway"/>
         <sequenceFlow id="approvedPath" sourceRef="approvalGateway" targetRef="approvedEnd">
@@ -313,7 +319,7 @@ Process definition (`LoanRequestProcess.bpmn20.xml`):
         </sequenceFlow>
 
         <userTask id="sendRejection" name="Send Rejection Letter"/>
-        <sequenceFlow sourceRef="sendRejection" targetRef="rejectedEnd"/>
+        <sequenceFlow id="toRejectedEnd" sourceRef="sendRejection" targetRef="rejectedEnd"/>
 
         <endEvent id="approvedEnd"/>
         <endEvent id="rejectedEnd"/>
