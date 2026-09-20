@@ -122,7 +122,7 @@ Execute a method call directly:
 ```
 
 **Requirements:**
-- Expression must return void
+- The expression is evaluated with the task as the EL root (bean methods can be called); any return value is ignored — the engine performs no return-type check
 - Method must be accessible
 - Useful for simple operations
 
@@ -156,7 +156,7 @@ public interface TransactionDependentTaskListener {
 | Can modify task | Yes — `task.setAssignee()` | No — task is read-only |
 | Can modify variables | Yes — `task.setVariable()` | No — map is a copy |
 | Timing options | `create`, `assignment`, `complete`, `delete` | `before-commit`, `committed`, `rolled-back` |
-| Transaction context | Inside the transaction | After commit or after rollback |
+| Transaction context | Inside the transaction | `before-commit`: during the commit phase, before the data is committed; `committed`: after the commit; `rolled-back`: after the rollback |
 
 ### Implementation Example
 
