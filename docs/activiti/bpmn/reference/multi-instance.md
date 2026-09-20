@@ -297,7 +297,7 @@ The `inputDataItem` name attribute maps to the `elementVariable`. It specifies w
 
 ### Output Data Items
 
-The `outputDataItem` name attribute specifies the variable name used to collect results from each instance. Results are aggregated into a collection:
+The `outputDataItem` name attribute specifies the name of the **child-local variable** to collect from each instance. Collected values are appended to a list variable whose name is given by the standard `loopDataOutputRef` attribute on `<multiInstanceLoopCharacteristics>` — without `loopDataOutputRef` no collection is created, updated, or exposed, and `outputDataItem` alone does nothing. When the multi-instance completes, that list is copied from the multi-instance scope to the process instance under the same name:
 
 ```xml
   <multiInstanceLoopCharacteristics 
@@ -329,7 +329,7 @@ The `outputDataItem` name attribute specifies the variable name used to collect 
 </userTask>
 ```
 
-**Note:** Each child execution receives the current collection element as the variable named by `activiti:elementVariable` (here: `approver`). To collect results, have each instance set a variable and reference it with the `outputDataItem` attribute:
+**Note:** Each child execution receives the current collection element as the variable named by `activiti:elementVariable` (here: `approver`). To collect results, have each instance set a **local** variable, reference it with `outputDataItem`, and name the target collection with `loopDataOutputRef` on the loop characteristics (without `loopDataOutputRef` nothing is collected):
 
 ```xml
 <multiInstanceLoopCharacteristics 
