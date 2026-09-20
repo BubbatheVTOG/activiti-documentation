@@ -15,7 +15,10 @@ Inclusive Gateways implement **OR logic** in BPMN processes. Unlike Exclusive Ga
 <inclusiveGateway id="inclusiveGateway" name="OR Decision"/>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
+**BPMN 2.0 Standard:** Supported, except where noted below
+
+The BPMN 2.0 `instant` attribute (and the 1.1 `exclusive` attribute) is **not modeled** — the `InclusiveGateway` model class declares no such fields, so "immediate" join semantics are unavailable; the join always uses the reachability check described in [Join Behavior](#join-behavior-converging).
+
 **Activiti Extensions:** Condition expressions, default flow support
 
 ## Key Features
@@ -27,10 +30,8 @@ Inclusive Gateways implement **OR logic** in BPMN processes. Unlike Exclusive Ga
 - **Join Behavior** - Waits for all selected paths to complete
 
 ### Activiti Extensions
-- **EL Expressions** - Complex condition evaluation
-- **Default Flow** - Fallback when no conditions match
-- **Async Support** - Can be configured for async execution
-- **Execution Listeners** - Lifecycle hooks
+- **EL Expressions** - Condition evaluation via any EL, including method calls and combined boolean tests (see [Complex Conditions](#3-complex-conditions-el-expressions))
+- **Default Flow** - Fallback path when no condition matches (see [Inclusive Gateway with Default Flow](#2-inclusive-gateway-with-default-flow))
 
 ## How It Works
 
@@ -48,7 +49,7 @@ When paths converge at an Inclusive Gateway:
 1. **Each arriving execution is inactivated** and waits at the gateway
 2. **The engine checks reachability** using `ExecutionGraphUtil.isReachable()` to determine if any other execution can still reach the gateway
 3. **When no other execution can reach the gateway**, the inactivated executions are released and the gateway continues
-4. **Note on variables:** The engine does NOT explicitly merge variables from parallel paths. Variables set on sibling executions are lost when those executions are deleted upon join. Only variables on the parent/scope execution are shared across paths. If you need to share data between parallel branches, set variables on the parent execution scope explicitly.
+4. **Note on variables:** There is no variable merge at the join. When the last reachable path arrives, the engine deletes the other (inactivated) executions **with their related data** — so values set with `setVariableLocal()` on a sibling branch's execution are gone after the join, because local variables are bound to that execution. Values set with `setVariable()` (non-local) live in the process-instance scope: they are visible from every parallel branch and survive the join. To share data between branches, use non-local variables.
 
 ## Configuration Options
 
@@ -57,7 +58,8 @@ When paths converge at an Inclusive Gateway:
 Simple OR decision with multiple conditions:
 
 ```xml
-<process id="notificationProcess" name="Notification Process">
+<process id="notificationProcess" name="Notification Process"
+         xmlns:activiti="http://activiti.org/bpmn">
   <startEvent id="start"/>
   
   <serviceTask id="processOrder" name="Process Order" activiti:class="com.example.OrderProcessor"/>
@@ -129,6 +131,10 @@ Add a default flow when no conditions match:
 - If both are false → Execute `defaultTask`
 - If both are true → Execute both tasks in parallel
 
+### 3. Complex Conditions (EL Expressions)
+
+Conditions are evaluated as EL expressions, so they can call methods on process variables and combine tests with `&amp;&amp;`, `||`, and comparisons (XML-escaped in the markup):
+
 ```xml
 <sequenceFlow id="premiumFlow" sourceRef="gateway" targetRef="premiumService">
   <conditionExpression>${orderService.isPremium(order)}</conditionExpression>
@@ -148,7 +154,8 @@ Add a default flow when no conditions match:
 Process through multiple channels simultaneously:
 
 ```xml
-<process id="multiChannelProcess" name="Multi-Channel Processing">
+<process id="multiChannelProcess" name="Multi-Channel Processing"
+         xmlns:activiti="http://activiti.org/bpmn">
   <startEvent id="start"/>
   
   <serviceTask id="receiveRequest" name="Receive Request" activiti:class="com.example.RequestReceiver"/>
@@ -197,7 +204,8 @@ Process through multiple channels simultaneously:
 ### Example 1: Order Fulfillment with Multiple Options
 
 ```xml
-<process id="orderFulfillment" name="Order Fulfillment">
+<process id="orderFulfillment" name="Order Fulfillment"
+         xmlns:activiti="http://activiti.org/bpmn">
   <startEvent id="start"/>
   
   <userTask id="receiveOrder" name="Receive Order" activiti:assignee="${orderClerk}"/>
@@ -254,7 +262,8 @@ Process through multiple channels simultaneously:
 ### Example 2: Multi-Step Approval Process
 
 ```xml
-<process id="approvalProcess" name="Multi-Step Approval">
+<process id="approvalProcess" name="Multi-Step Approval"
+         xmlns:activiti="http://activiti.org/bpmn">
   <startEvent id="start"/>
   
   <userTask id="submitRequest" name="Submit Request" activiti:assignee="${requester}"/>
@@ -340,7 +349,7 @@ for (Execution execution : gatewayExecutions) {
 1. **Clear Conditions** - Make conditions mutually understandable
 2. **Default Flow** - Always define a default flow to prevent stalls
 3. **Parallel Awareness** - Remember selected paths run in parallel
-4. **Variable Scope** - Be aware that sibling execution variables are lost at join. Only variables set on the parent/scope execution persist after the gateway completes. Use `execution.setVariableLocal()` carefully and prefer setting variables on the parent scope.
+4. **Variable Scope** - Distinguish the two variable APIs: `setVariableLocal()` binds to the execution and is deleted with it when the join fires; `setVariable()` writes to the process-instance scope, is visible from all parallel branches, and survives the join. Share data between branches with non-local variables, never with locals on sibling executions.
 5. **Performance** - Too many parallel paths can impact performance
 6. **Testing** - Test all condition combinations
 7. **Documentation** - Document which conditions can be true simultaneously
@@ -360,10 +369,10 @@ for (Execution execution : gatewayExecutions) {
 | Feature | Inclusive | Exclusive | Parallel |
 |---------|-----------|-----------|----------|
 | **Logic** | OR (one or more) | XOR (exactly one) | AND (all) |
-| **Conditions** | Required on flows | Required on flows | No conditions |
+| **Conditions** | Optional — an unconditional outflow is always taken | Optional — only needed with multiple outflows | No conditions |
 | **Parallel Paths** | Yes (selected) | No | Yes (all) |
-| **Join Behavior** | Wait for selected | N/A | Wait for all |
-| **Default Flow** | Optional but recommended | Required if no match | Not applicable |
+| **Join Behavior** | Waits until no other execution can reach it (see [Join Behavior](#join-behavior-converging)) | First arrival passes — only one path can be active | Wait for all |
+| **Default Flow** | Recommended — an all-false split stalls the process without one | Recommended — same failure mode | Not applicable |
 
 ## Related Documentation
 
@@ -372,6 +381,4 @@ for (Execution execution : gatewayExecutions) {
 - [Event-Based Gateway](./event-gateway.md) - Event-driven routing
 - [Complex Gateway](./complex-gateway.md) - Support status (not supported)
 - [Gateway Overview](./index.md) - All gateway types
-
----
 
