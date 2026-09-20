@@ -34,7 +34,7 @@ Event SubProcesses are **specialized subprocesses** that are triggered by events
 ### Types of Event SubProcesses
 
 | Type | Trigger (on start event) | Behavior | Use Case |
-|------|--------------------------|----------|----------|
+| ------ | -------------------------- | ---------- | ---------- |
 | **Interrupting** | Error (always — see note below), or message/signal with `isInterrupting="true"` (default) on start event | Cancels parent activities | Exception handling |
 | **Non-Interrupting** | `message` start with `isInterrupting="false"` on the start event only | Runs parallel to parent | Logging, notifications |
 | **Error** | `<errorEventDefinition errorRef="..."/>` or `errorCode="..."` | Catches errors | Error recovery |
@@ -73,6 +73,7 @@ Cancels parent activities when triggered. By default, start events in event subp
 ```
 
 **Behavior:**
+
 - When `task1` throws an error with `errorCode` `APP001`, the event subprocess triggers
 - **Cancels** the "Risky Task"
 - Executes the error handling logic
@@ -109,6 +110,7 @@ Runs parallel without canceling parent:
 ```
 
 **Behavior:**
+
 - Main process continues normally
 - When "cancelMessage" arrives, event subprocess triggers
 - **Does NOT cancel** the main task
@@ -151,6 +153,7 @@ Catches and handles errors:
 ```
 
 **Error Definition:**
+
 ```xml
 <definitions>
   <error id="ApplicationError" name="Application Error" errorCode="APP001"/>
@@ -189,6 +192,7 @@ Waits for external messages:
 ```
 
 **Message Definition:**
+
 ```xml
 <message id="cancelOrderMessage" name="Cancel Order Message"/>
 ```
@@ -224,6 +228,7 @@ For cross-process communication, use a signal start event on a **main process** 
 ```
 
 **Signal Definition:**
+
 ```xml
 <signal id="EmergencyStop" name="Emergency Stop"/>
 ```
