@@ -30,6 +30,7 @@ Transaction SubProcesses group activities that should be treated as a unit. The 
 ## Key Features
 
 ### Standard BPMN Features
+
 - **Regular Sub-Process Execution** - No commit semantics; the transaction simply completes at its normal end event
 - **Cancel End Event** - Cancels the transaction scope via the cancel end event
 - **Rollback Support** - Cancellation snapshots the transaction's per-activity compensation registrations and dispatches them in reverse completion order; those registrations are created as activities complete (and a cancel path reached without any of them fails at runtime — see §2)
@@ -37,6 +38,7 @@ Transaction SubProcesses group activities that should be treated as a unit. The 
 - **Error Handling** - Transaction-specific error events
 
 ### Activiti Extensions
+
 - **Custom Compensation Logic** - Define rollback behavior
 - **Error Event Definitions** - Custom transaction errors
 - **Scope Management** - Variable isolation
@@ -100,6 +102,7 @@ Simple transaction with a commit path and a cancel path:
 ```
 
 **Behavior:**
+
 - The transaction **completes** when execution reaches the normal end event (`transEnd`) — there is no special commit step
 - The transaction is **canceled** only when execution reaches the cancel end event (`cancelEnd` with `<cancelEventDefinition/>`) — and the cancel completes only if the scope holds compensation registrations at that moment (per §2); this example has no COMPENSATE boundary at all, so taking the `noFunds` branch fails at runtime with `No execution found for sub process of boundary cancel event ...` instead of completing the cancel
 - A plain error from a service task does NOT cancel the transaction — it propagates outward and fails the process instance if unhandled
@@ -256,6 +259,7 @@ Transactions within transactions:
 ```
 
 **Behavior:**
+
 - Each transaction completes when it reaches its normal end event (no commit semantics), and is canceled only when it reaches its own cancel end event
 - If the inner transaction is canceled, route the flow so the outer transaction can also be canceled via its own cancel end event
 - Both must complete for the full transaction to finish successfully
@@ -361,6 +365,7 @@ Transactions within transactions:
 ```
 
 **Transaction Guarantees:**
+
 - The transaction completes only when execution reaches `transEnd` (no commit semantics); it is canceled only when execution reaches the cancel end event (`cancelEnd`) — a plain error from a step does not cancel it
 - On the transaction's **own** cancellation, no compensation handler runs in this example: the `transactionCompensation` boundary is attached to the *transaction*, so the engine executes it only when the transaction **completes normally** — at which point it records the first `isForCompensation="true"` association target (`cancelShipping`) as a whole-transaction compensation, snapshotted against the process instance and dispatchable later via an intermediate throw compensation event with `activityRef="orderTransaction"` (the pattern the engine's `CompensateEventTest` uses). On the cancel path, by contrast, this boundary has never executed, so the scope holds no registrations: the engine creates no snapshot, and the cancel boundary fails at runtime with `No execution found for sub process of boundary cancel event ...` — `cancelShipping` never runs. (The only cancel-reachable branch in this model is the no-inventory one, reached before any compensatable step — exactly the shape that triggers the failure.)
 - Activiti does NOT automatically undo side effects from service tasks (payments, inventory changes, etc.)
@@ -419,21 +424,25 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 ## Use Cases
 
 ### 1. **Financial Operations**
+
 - Bank transfers
 - Payment processing
 - Account updates
 
 ### 2. **Inventory Management**
+
 - Stock reservations
 - Order fulfillment
 - Warehouse operations
 
 ### 3. **Order Processing**
+
 - E-commerce orders
 - Purchase orders
 - Sales transactions
 
 ### 4. **Data Synchronization**
+
 - Multi-system updates
 - Coordinated compensating updates when a step fails
 - API integrations
@@ -447,4 +456,3 @@ boolean inTransaction = runtimeService.createExecutionQuery()
 - [Error Events](../events/index.md) - Error handling
 
 ---
-

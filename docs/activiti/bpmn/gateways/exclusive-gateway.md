@@ -21,12 +21,14 @@ The Exclusive Gateway (XOR) routes the flow along **exactly one path** based on 
 ## Key Features
 
 ### Standard BPMN Features
+
 - **Condition Expressions** - Evaluate on outgoing flows
 - **Default Flow** - Fallback when no conditions match
 - **Divergence** - Split into multiple paths
 - **Convergence** - Merge from multiple paths
 
 ### Activiti Customizations
+
 - **EL Expressions** - Advanced condition language
 - **Default Flow Attribute** - Explicit default specification
 - **Execution Listeners** - Track decision points
@@ -232,4 +234,3 @@ List<HistoricActivityInstance> enteredActivities = historyService
 - [Expression Language](../../api-reference/core-common/expression-language)
 
 ---
-

@@ -41,6 +41,7 @@ Unlike [Execution Listeners](./execution-listeners.md) and [Task Listeners](./ta
 A listener declared in process A therefore **only receives events that carry process A's definition id** — other process definitions never see them.
 
 **Important Attributes:**
+
 - `events` - Comma-separated list of event type names the listener should receive (see [Valid Event Types](#valid-event-types)). Omit for *all* events.
 - `class` - Fully qualified class name implementing `org.activiti.engine.delegate.event.ActivitiEventListener`
 - `delegateExpression` - EL expression resolving to a Spring bean implementing `ActivitiEventListener`
@@ -101,6 +102,7 @@ public class OrderLifecycleListener implements ActivitiEventListener {
 ```
 
 **Requirements:**
+
 - Class must implement `org.activiti.engine.delegate.event.ActivitiEventListener`
 - Class must be on the classpath and have a no-arg constructor
 - Spring annotations (`@Autowired`, `@Component`, ...) are **not** processed — the engine instantiates the class with plain reflection
@@ -150,7 +152,7 @@ public class TaskAssignedNotifier implements ActivitiEventListener {
 ### Full Attribute Reference
 
 | Attribute | Required | Description |
-|-----------|----------|-------------|
+| ----------- | ---------- | ------------- |
 | `class` | one of `class`, `delegateExpression`, `throwEvent` | Fully qualified class name of an `ActivitiEventListener` implementation |
 | `delegateExpression` | one of `class`, `delegateExpression`, `throwEvent` | EL expression (`${...}`) resolving to an `ActivitiEventListener` bean |
 | `throwEvent` | one of `class`, `delegateExpression`, `throwEvent` | `signal`, `globalSignal`, `message`, or `error` — throw a BPMN event instead of running custom code |
@@ -204,7 +206,7 @@ When `entityType` is set, the engine only delivers events that target an entity 
 Valid values (mapped to engine types):
 
 | `entityType` value | Event entity |
-|--------------------|--------------|
+| -------------------- | -------------- |
 | `attachment` | `org.activiti.engine.task.Attachment` *(deprecated)* |
 | `comment` | `org.activiti.engine.task.Comment` *(deprecated)* |
 | `execution` | `org.activiti.engine.runtime.Execution` |
@@ -225,7 +227,7 @@ Instead of running custom code, a listener can **throw a BPMN event** into the p
 ```
 
 | `throwEvent` value | Throws | Delivery scope |
-|--------------------|--------|----------------|
+| -------------------- | -------- | ---------------- |
 | `signal` | A signal event | Signal catch events **of the same process instance** |
 | `globalSignal` | A signal event | Signal subscribers across all tenants — except when the triggering event carries a process definition, in which case the lookup is filtered by that definition's tenant id (an event from a non-tenant, i.e. default-tenant, process reaches only default-tenant subscribers) |
 | `message` | A message event | Message catch events **of the same process instance** |
@@ -353,7 +355,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Entity Lifecycle Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `ENTITY_CREATED` | A new entity is created |
 | `ENTITY_INITIALIZED` | A new entity is created **and** all child entities created as a result are created and initialized |
 | `ENTITY_UPDATED` | An existing entity is updated |
@@ -364,7 +366,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Activity Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `ACTIVITY_STARTED` | An activity is starting to execute (dispatched right before execution) |
 | `ACTIVITY_COMPLETED` | An activity has been completed successfully |
 | `ACTIVITY_CANCELLED` | An activity was cancelled because of a boundary event |
@@ -378,7 +380,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Process Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `PROCESS_STARTED` | A process instance has been started (dispatched after the related `ENTITY_INITIALIZED`) |
 | `PROCESS_COMPLETED` | A process has completed (dispatched after the last `ACTIVITY_COMPLETED`) |
 | `PROCESS_COMPLETED_WITH_ERROR_END_EVENT` | A process completed with an error end event |
@@ -387,7 +389,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Task Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `TASK_CREATED` | A task has been created (fully initialized, before `TaskListener.EVENTNAME_CREATE`) |
 | `TASK_ASSIGNED` | A task has been assigned (dispatched alongside an `ENTITY_UPDATED` event) |
 | `TASK_COMPLETED` | A task has been completed (before the task entity is deleted and before the process moves on) |
@@ -395,7 +397,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Job, Timer, and Sequence Flow Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `TIMER_SCHEDULED` | A timer has been scheduled |
 | `TIMER_FIRED` | A timer has fired successfully |
 | `JOB_CANCELED` | A job was cancelled (e.g. the bound user task was completed early) |
@@ -407,7 +409,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Variable Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `VARIABLE_CREATED` | A new variable has been created |
 | `VARIABLE_UPDATED` | An existing variable has been updated |
 | `VARIABLE_DELETED` | An existing variable has been deleted |
@@ -415,7 +417,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### History Events (require history level >= ACTIVITY)
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `HISTORIC_ACTIVITY_INSTANCE_CREATED` | A `HistoricActivityInstance` was created |
 | `HISTORIC_ACTIVITY_INSTANCE_ENDED` | A `HistoricActivityInstance` was marked as ended |
 | `HISTORIC_PROCESS_INSTANCE_CREATED` | A `HistoricProcessInstance` was created |
@@ -424,7 +426,7 @@ The `events` attribute accepts any comma-separated list of names from the engine
 ### Engine, Custom, Error, and Identity Events
 
 | Event | Meaning |
-|-------|---------|
+| ------- | --------- |
 | `ENGINE_CREATED` | The process engine has been created and is ready for use |
 | `ENGINE_CLOSED` | The process engine has been closed and cannot be used anymore |
 | `CUSTOM` | Custom events dispatched via the public API (never thrown by the engine itself) |
@@ -542,7 +544,7 @@ public class TaskNotifier implements ActivitiEventListener {
 The `<activiti:eventListener>` element is the **BPMN-level front end** of the same event mechanism documented in [Engine Event System](../../advanced/engine-event-system.md). Both approaches consume `ActivitiEvent` objects dispatched by the `ActivitiEventDispatcher`, and a single engine event is delivered **twice** when both are present:
 
 | Aspect | Engine-wide listeners | Process event listeners |
-|--------|-----------------------|-------------------------|
+| -------- | ----------------------- | ------------------------- |
 | Registration | `ProcessEngineConfigurationImpl.setEventListeners(...)` or the `ActivitiEventDispatcher` API (Java/XML configuration) | `<activiti:eventListener>` in the process XML |
 | Scope | Every process definition and every engine event | Only events that carry *this* process definition's id |
 | Per-process filtering | No — you filter in code (`event.getProcessDefinitionId()`) | Yes — declared per process definition |

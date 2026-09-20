@@ -14,7 +14,7 @@ SubProcesses in BPMN allow you to **group activities** into a single, collapsibl
 Activiti supports four types of subprocesses:
 
 | Type | Description | Use Case |
-|------|-------------|----------|
+| ------ | ------------- | ---------- |
 | **Regular SubProcess** | Embedded subprocess with visible flow | Organizing related activities |
 | **Event SubProcess** | Triggered by events within scope | Exception handling, compensation |
 | **Ad-hoc SubProcess** | Activities in arbitrary order | Flexible, user-driven workflows |
@@ -28,4 +28,3 @@ Activiti supports four types of subprocesses:
 - [Transaction](./transaction.md) - Cancel end event and explicit compensation
 
 ---
-
