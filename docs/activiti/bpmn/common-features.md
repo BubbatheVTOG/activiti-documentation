@@ -11,7 +11,7 @@ This document describes **features available across all BPMN elements** in Activ
 
 ## Overview
 
-Activiti provides powerful extensions that can be applied to most BPMN elements:
+Activiti provides extensions that apply to many BPMN elements:
 
 - **Multi-Instance** - Execute activities multiple times
 - **Execution Listeners** - Hook into lifecycle events

@@ -99,7 +99,7 @@ Asynchronous execution allows activities to run in the **background** using Acti
 
 **Retry Cycle Syntax (single-phase only):**
 - `R5/PT0S` - Retry 5 times with no delay between retries
-- `R3/PT1M` - Retry 3 times with 1 minute interval
+- `R3/PT1M` - Retry 3 times with a 1-minute interval
 - `R[<n>]/<ISO-8601 duration>[/<end date>]` - General form, e.g. `R10/PT30S/2024-01-31T23:59:59`
 - cron expressions are also accepted, e.g. `0 */5 * * * ?`
 
@@ -486,7 +486,7 @@ int maxPoolSize = config.getAsyncExecutorMaxPoolSize();
 <scriptTask activiti:async="true"/>
 ```
 
-**Solution:** Only async long-running operations
+**Solution:** Use async execution only for long-running operations.
 
 ### 2. **No Retry Configuration**
 ```xml
@@ -496,7 +496,7 @@ int maxPoolSize = config.getAsyncExecutorMaxPoolSize();
              activiti:class="com.example.ExternalApi"/>
 ```
 
-**Solution:** Always add retry policy for external calls
+**Solution:** Add a retry policy for external calls that can fail transiently.
 
 ### 3. **Transaction Issues**
 ```java

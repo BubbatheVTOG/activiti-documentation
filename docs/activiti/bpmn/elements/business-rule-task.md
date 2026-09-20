@@ -7,7 +7,7 @@ description: "Complete guide to BusinessRuleTask elements for executing business
 
 # Business Rule Task
 
-Business Rule Tasks provide a **BPMN 2.0 standard element** for executing business rules. However, Activiti does **not include a native rules engine**. Instead, it provides a framework for integrating external rules engines like Drools, DMN, or custom rule implementations.
+Business Rule Tasks provide a **BPMN 2.0 standard element** for executing business rules. However, Activiti does **not include a native rules engine**. Instead, it provides a framework for integrating external rules engines such as Drools or DMN, as well as custom rule implementations.
 
 ## Overview
 
@@ -57,17 +57,15 @@ public interface BusinessRuleTaskDelegate extends ActivityBehavior {
 
 ### How It Works
 
-1. **BPMN Parser** reads the `businessRuleTask` element
-2. **Factory Method** (`DefaultActivityBehaviorFactory.createBusinessRuleTaskActivityBehavior()`) instantiates your custom class
-3. **Configuration** passes input variables, rule names, and result variable to your delegate
-4. **Execution** your `execute()` method runs the rules logic
-5. **Output** result is stored in the specified process variable
+1. The **BPMN parser** reads the `businessRuleTask` element.
+2. The **factory method** (`DefaultActivityBehaviorFactory.createBusinessRuleTaskActivityBehavior()`) instantiates your custom class.
+3. **Configuration** passes input variables, rule names, and the result variable to your delegate.
+4. During **execution**, your `execute()` method runs the rule logic.
+5. The **output** is stored in the specified process variable.
 
 **Critical:** There is **no default behavior** for Business Rule Tasks. If no `activiti:class` is specified, the factory leaves the behavior null and subsequently calls its methods unconditionally, so the parse throws a `NullPointerException` regardless of whether input variables or rules are configured. Always specify a class on a `businessRuleTask`.
 
-**Note:** If no `activiti:resultVariable` is specified, the factory defaults to `"org.activiti.engine.rules.OUTPUT"`.
-
-**Note:** `activiti:class` instantiates the class via `Class.forName()` reflection — it does **not** look up a Spring bean. This means `@Autowired` and other Spring annotations will **not** work. For Spring integration, use `activiti:delegateExpression="${beanName}"` on a service task instead.
+**Defaults and instantiation:** If no `activiti:resultVariable` is specified, the factory uses `"org.activiti.engine.rules.OUTPUT"`. The `activiti:class` attribute instantiates the class through `Class.forName()` reflection; it does **not** look up a Spring bean. As a result, `@Autowired` and other Spring annotations do not work. For Spring integration, use `activiti:delegateExpression="${beanName}"` on a service task instead.
 
 ## Implementation Patterns
 

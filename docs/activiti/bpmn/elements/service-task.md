@@ -195,7 +195,7 @@ public class MoviesConnector implements Connector {
 
 **Using Connector with Extension JSON:**
 
-Connectors work seamlessly with extension JSON for variable mapping:
+Connectors use extension JSON to map process variables to connector inputs and outputs:
 
 ```json
 {
@@ -736,9 +736,9 @@ Configure retry policies for failed jobs:
 ```
 
 **Retry Cycle Syntax:**
-- `R5/PT5S` - Retry 5 times with 5-second interval
-- `R5/PT1M` - Retry 5 times with 1 minute interval
-- `R3/PT5M` - Retry 3 times with 5 minute interval
+- `R5/PT5S` - Retry 5 times with a 5-second interval
+- `R5/PT1M` - Retry 5 times with a 1-minute interval
+- `R3/PT5M` - Retry 3 times with a 5-minute interval
 
 > **Note:** Only a single-phase `R[<n>]/ISO-8601` duration (or a cron expression) is supported — the engine splits the cycle on `/` only. Chained phases separated by `;` (e.g., `R3/PT5M;R2/PT30M`) are **not** supported and fail at runtime with `failedJobRetryTimeCylcle has wrong format`.
 
@@ -1205,7 +1205,7 @@ For reference, here's how these examples would look using legacy syntax:
 - ✅ Cleaner separation of concerns (BPMN for flow, Java for logic, JSON for mappings)
 - ✅ Type-safe with Spring dependency injection
 - ✅ Easier to test and maintain
-- ✅ Works seamlessly with extension JSON
+- ✅ Supports variable mappings through extension JSON
 
 ```java
 import org.activiti.engine.delegate.JavaDelegate;
