@@ -499,25 +499,25 @@ historyService.createHistoricVariableInstanceQuery()
 | Column | Description |
 |--------|-------------|
 | `ID_` | Variable instance ID |
+| `REV_` | Revision number (optimistic locking) |
 | `TYPE_` | Variable type (string, long, date, bytes, jpa-entity, jpa-entity-list, etc.) |
 | `NAME_` | Variable name |
-| `EXECUTION_ID_` | Execution ID (null = process instance level) |
+| `EXECUTION_ID_` | Execution the variable belongs to. For process-level variables this is the process instance ID (the root execution) |
+| `PROC_INST_ID_` | Process instance ID |
 | `TASK_ID_` | Task ID (if task variable) |
-| `TEXT_` | String value |
-| `TEXT2_` | Secondary string value |
-| `LONG_VALUE_` | Long numeric value |
-| `DOUBLE_VALUE_` | Double numeric value |
-| `TIMESTAMP_` | Date/time value |
-| `BYTES_` | Blob/serialized object |
+| `TEXT_` | String value. For JPA entity variables: the entity's class name |
+| `TEXT2_` | Secondary string value. For JPA entity variables: the entity's primary key |
+| `LONG_` | Long numeric value. Date variables are stored here as epoch milliseconds |
+| `DOUBLE_` | Double numeric value |
+| `BYTEARRAY_ID_` | Reference to the serialized bytes in `ACT_GE_BYTEARRAY` (byte arrays, serializable objects) |
 
 ### Historical Variables
 
 **Table:** `ACT_HI_VARINST`
 
-Same structure as runtime variables, plus:
-- `PROC_INST_ID_` - Process instance ID
-- `PROC_DEF_ID_` - Process definition ID
-- `REV_` - Revision number
+Same value columns as the runtime table, with two differences:
+- The type column is named `VAR_TYPE_` instead of `TYPE_`
+- Adds `CREATE_TIME_` and `LAST_UPDATED_TIME_` (when the variable was created and last updated)
 
 ## Best Practices
 
