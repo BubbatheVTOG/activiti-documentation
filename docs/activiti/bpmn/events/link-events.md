@@ -314,6 +314,7 @@ Variables are shared via process scope:
 ```
 
 **Variable Setter:**
+
 ```java
 public class VariableSetter implements JavaDelegate {
     @Override
@@ -325,6 +326,7 @@ public class VariableSetter implements JavaDelegate {
 ```
 
 **Variable User:**
+
 ```java
 public class VariableUser implements JavaDelegate {
     @Override

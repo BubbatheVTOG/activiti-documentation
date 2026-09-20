@@ -192,7 +192,8 @@ For receive tasks the message definition is metadata only — it does not create
 **Problem:** Expecting `messageEventReceived()` to work on a receive task
 
 ```xml
-<!-- The messageEventDefinition inside a receiveTask is ignored by the engine -->
+<!-- The messageEventDefinition inside a receiveTask is IGNORED by the engine:
+     it does NOT create a message subscription and is NOT used for correlation -->
 <receiveTask id="waitForResponse" name="Wait">
   <messageEventDefinition messageRef="response"/>
 </receiveTask>

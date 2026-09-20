@@ -490,6 +490,7 @@ There is **no name-based automatic mapping** of process variables to connector i
 ### Example
 
 **Connector Definition:**
+
 ```json
 {
   "inputs": [
@@ -510,6 +511,7 @@ There is **no name-based automatic mapping** of process variables to connector i
 ```
 
 **Process Variables Before:**
+
 ```java
 Map<String, Object> variables = Map.of(
     "input-variable-name-1", "some value"  // Passed to the connector only if the activity mapping is MAP_ALL_INPUTS (or explicitly mapped)
@@ -517,6 +519,7 @@ Map<String, Object> variables = Map.of(
 ```
 
 **Process Variables After:**
+
 ```java
 // Automatically set by connector
 "out-variable-name-1": "result value"

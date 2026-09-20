@@ -113,8 +113,8 @@ Gateways work seamlessly with multi-instance activities:
 ```xml
 <parallelGateway id="split"/>
 
-<userTask id="reviewTask" xmlns:activiti="http://activiti.org/bpmn">
-  <multiInstanceLoopCharacteristics
+<userTask id="reviewTask">
+  <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${reviewers}"
     activiti:elementVariable="reviewer">
@@ -129,154 +129,100 @@ Gateways work seamlessly with multi-instance activities:
 ### Example 1: Exclusive Gateway with Multiple Conditions
 
 ```xml
-<process id="amountRouting" name="Order Amount Routing"
-         xmlns:activiti="http://activiti.org/bpmn">
+<!-- Decision based on order amount -->
+<exclusiveGateway id="amountDecision" name="Order Amount Check" default="defaultFlow"/>
 
-  <startEvent id="start"/>
-  <sequenceFlow id="toDecision" sourceRef="start" targetRef="amountDecision"/>
+<sequenceFlow id="smallOrder" sourceRef="amountDecision" targetRef="standardProcessing">
+  <conditionExpression>${orderAmount &lt; 100}</conditionExpression>
+</sequenceFlow>
 
-  <!-- Decision based on order amount -->
-  <exclusiveGateway id="amountDecision" name="Order Amount Check" default="defaultFlow"/>
+<sequenceFlow id="mediumOrder" sourceRef="amountDecision" targetRef="managerApproval">
+  <conditionExpression>${orderAmount >= 100 &amp;&amp; orderAmount &lt; 1000}</conditionExpression>
+</sequenceFlow>
 
-  <sequenceFlow id="smallOrder" sourceRef="amountDecision" targetRef="standardProcessing">
-    <conditionExpression>${orderAmount &lt; 100}</conditionExpression>
-  </sequenceFlow>
+<sequenceFlow id="largeOrder" sourceRef="amountDecision" targetRef="directorApproval">
+  <conditionExpression>${orderAmount >= 1000}</conditionExpression>
+</sequenceFlow>
 
-  <sequenceFlow id="mediumOrder" sourceRef="amountDecision" targetRef="managerApproval">
-    <conditionExpression>${orderAmount &gt;= 100 &amp;&amp; orderAmount &lt; 1000}</conditionExpression>
-  </sequenceFlow>
-
-  <sequenceFlow id="largeOrder" sourceRef="amountDecision" targetRef="directorApproval">
-    <conditionExpression>${orderAmount &gt;= 1000}</conditionExpression>
-  </sequenceFlow>
-
-  <!-- Fallback: taken only when none of the conditions above matches.
-       The default flow carries no condition of its own - the `default`
-       attribute is what selects it (see Default Flow above). -->
-  <sequenceFlow id="defaultFlow" sourceRef="amountDecision" targetRef="errorHandling"/>
-
-  <serviceTask id="standardProcessing" name="Standard Processing" activiti:class="com.example.StandardProcessing"/>
-  <serviceTask id="managerApproval" name="Manager Approval" activiti:class="com.example.ManagerApproval"/>
-  <serviceTask id="directorApproval" name="Director Approval" activiti:class="com.example.DirectorApproval"/>
-  <serviceTask id="errorHandling" name="Error Handling" activiti:class="com.example.ErrorHandling"/>
-
-  <endEvent id="end"/>
-  <sequenceFlow id="p1" sourceRef="standardProcessing" targetRef="end"/>
-  <sequenceFlow id="p2" sourceRef="managerApproval" targetRef="end"/>
-  <sequenceFlow id="p3" sourceRef="directorApproval" targetRef="end"/>
-  <sequenceFlow id="p4" sourceRef="errorHandling" targetRef="end"/>
-</process>
+<!-- Default flow (should not be reached with above conditions) -->
+<sequenceFlow id="defaultFlow" sourceRef="amountDecision" targetRef="errorHandling">
+  <conditionExpression>${false}</conditionExpression>
+</sequenceFlow>
 ```
 
 ### Example 2: Parallel Gateway for Concurrent Processing
 
 ```xml
-<process id="parallelExample" name="Concurrent Processing"
-         xmlns:activiti="http://activiti.org/bpmn">
+<!-- Split into parallel paths -->
+<parallelGateway id="parallelSplit" name="Start Parallel Processing"/>
 
-  <startEvent id="start"/>
+<sequenceFlow id="flow1" sourceRef="parallelSplit" targetRef="checkInventory"/>
+<sequenceFlow id="flow2" sourceRef="parallelSplit" targetRef="validatePayment"/>
+<sequenceFlow id="flow3" sourceRef="parallelSplit" targetRef="notifyCustomer"/>
 
-  <!-- Split into parallel paths -->
-  <parallelGateway id="parallelSplit" name="Start Parallel Processing"/>
-  <sequenceFlow id="entry" sourceRef="start" targetRef="parallelSplit"/>
+<!-- Service tasks execute in parallel -->
+<serviceTask id="checkInventory" name="Check Inventory" activiti:async="true"/>
+<serviceTask id="validatePayment" name="Validate Payment" activiti:async="true"/>
+<serviceTask id="notifyCustomer" name="Notify Customer" activiti:async="true"/>
 
-  <sequenceFlow id="flow1" sourceRef="parallelSplit" targetRef="checkInventory"/>
-  <sequenceFlow id="flow2" sourceRef="parallelSplit" targetRef="validatePayment"/>
-  <sequenceFlow id="flow3" sourceRef="parallelSplit" targetRef="notifyCustomer"/>
+<!-- Wait for all to complete -->
+<parallelGateway id="parallelJoin" name="Wait for All"/>
 
-  <!-- Service tasks execute in parallel -->
-  <serviceTask id="checkInventory" name="Check Inventory" activiti:class="com.example.InventoryChecker" activiti:async="true"/>
-  <serviceTask id="validatePayment" name="Validate Payment" activiti:class="com.example.PaymentValidator" activiti:async="true"/>
-  <serviceTask id="notifyCustomer" name="Notify Customer" activiti:class="com.example.CustomerNotifier" activiti:async="true"/>
-
-  <!-- Wait for all to complete -->
-  <parallelGateway id="parallelJoin" name="Wait for All"/>
-
-  <sequenceFlow id="join1" sourceRef="checkInventory" targetRef="parallelJoin"/>
-  <sequenceFlow id="join2" sourceRef="validatePayment" targetRef="parallelJoin"/>
-  <sequenceFlow id="join3" sourceRef="notifyCustomer" targetRef="parallelJoin"/>
-
-  <endEvent id="end"/>
-  <sequenceFlow id="exit" sourceRef="parallelJoin" targetRef="end"/>
-</process>
+<sequenceFlow id="join1" sourceRef="checkInventory" targetRef="parallelJoin"/>
+<sequenceFlow id="join2" sourceRef="validatePayment" targetRef="parallelJoin"/>
+<sequenceFlow id="join3" sourceRef="notifyCustomer" targetRef="parallelJoin"/>
 ```
 
 ### Example 3: Inclusive Gateway for Optional Paths
 
 ```xml
-<process id="notificationExample" name="Optional Notifications"
-         xmlns:activiti="http://activiti.org/bpmn">
+<!-- Multiple independent conditions -->
+<inclusiveGateway id="notificationDecision" name="Notification Options"/>
 
-  <startEvent id="start"/>
+<sequenceFlow id="emailFlow" sourceRef="notificationDecision" targetRef="sendEmail">
+  <conditionExpression>${sendEmail}</conditionExpression>
+</sequenceFlow>
 
-  <!-- Multiple independent conditions -->
-  <inclusiveGateway id="notificationDecision" name="Notification Options"/>
-  <sequenceFlow id="entry" sourceRef="start" targetRef="notificationDecision"/>
+<sequenceFlow id="smsFlow" sourceRef="notificationDecision" targetRef="sendSMS">
+  <conditionExpression>${sendSMS}</conditionExpression>
+</sequenceFlow>
 
-  <sequenceFlow id="emailFlow" sourceRef="notificationDecision" targetRef="sendEmail">
-    <conditionExpression>${sendEmail}</conditionExpression>
-  </sequenceFlow>
+<sequenceFlow id="pushFlow" sourceRef="notificationDecision" targetRef="sendPush">
+  <conditionExpression>${sendPushNotification}</conditionExpression>
+</sequenceFlow>
 
-  <sequenceFlow id="smsFlow" sourceRef="notificationDecision" targetRef="sendSMS">
-    <conditionExpression>${sendSMS}</conditionExpression>
-  </sequenceFlow>
+<!-- All selected notifications execute in parallel -->
+<serviceTask id="sendEmail" name="Send Email" activiti:type="mail"/>
+<serviceTask id="sendSMS" name="Send SMS" activiti:class="com.example.SmsService"/>
+<serviceTask id="sendPush" name="Send Push" activiti:class="com.example.PushService"/>
 
-  <sequenceFlow id="pushFlow" sourceRef="notificationDecision" targetRef="sendPush">
-    <conditionExpression>${sendPushNotification}</conditionExpression>
-  </sequenceFlow>
+<!-- Wait for selected paths to complete -->
+<inclusiveGateway id="notificationJoin" name="Notifications Complete"/>
 
-  <!-- All selected notifications execute in parallel -->
-  <serviceTask id="sendEmail" name="Send Email" activiti:type="mail"/>
-  <serviceTask id="sendSMS" name="Send SMS" activiti:class="com.example.SmsService"/>
-  <serviceTask id="sendPush" name="Send Push" activiti:class="com.example.PushService"/>
-
-  <!-- Wait for selected paths to complete -->
-  <inclusiveGateway id="notificationJoin" name="Notifications Complete"/>
-
-  <sequenceFlow id="emailReturn" sourceRef="sendEmail" targetRef="notificationJoin"/>
-  <sequenceFlow id="smsReturn" sourceRef="sendSMS" targetRef="notificationJoin"/>
-  <sequenceFlow id="pushReturn" sourceRef="sendPush" targetRef="notificationJoin"/>
-
-  <endEvent id="end"/>
-  <sequenceFlow id="exit" sourceRef="notificationJoin" targetRef="end"/>
-</process>
+<sequenceFlow id="emailReturn" sourceRef="sendEmail" targetRef="notificationJoin"/>
+<sequenceFlow id="smsReturn" sourceRef="sendSMS" targetRef="notificationJoin"/>
+<sequenceFlow id="pushReturn" sourceRef="sendPush" targetRef="notificationJoin"/>
 ```
 
 ### Example 4: Event-Based Gateway for Asynchronous Decisions
 
 ```xml
-<process id="eventDecisionExample" name="Wait for Response or Timeout"
-         xmlns:activiti="http://activiti.org/bpmn">
+<!-- Wait for one of several events -->
+<eventBasedGateway id="eventDecision" name="Wait for Response"/>
 
-  <message id="customerResponse" name="Customer Response"/>
+<!-- Message event: customer responds -->
+<sequenceFlow id="responseFlow" sourceRef="eventDecision" targetRef="messageCatch"/>
+<intermediateCatchEvent id="messageCatch">
+  <messageEventDefinition messageRef="customerResponse"/>
+</intermediateCatchEvent>
 
-  <startEvent id="start"/>
-
-  <!-- Wait for one of several events -->
-  <eventBasedGateway id="eventDecision" name="Wait for Response"/>
-  <sequenceFlow id="entry" sourceRef="start" targetRef="eventDecision"/>
-
-  <!-- Message event: customer responds -->
-  <sequenceFlow id="responseFlow" sourceRef="eventDecision" targetRef="messageCatch"/>
-  <intermediateCatchEvent id="messageCatch">
-    <messageEventDefinition messageRef="customerResponse"/>
-  </intermediateCatchEvent>
-
-  <!-- Timer event: timeout after 24 hours -->
-  <sequenceFlow id="timeoutFlow" sourceRef="eventDecision" targetRef="timerCatch"/>
-  <intermediateCatchEvent id="timerCatch">
-    <timerEventDefinition>
-      <timeDuration>PT24H</timeDuration>
-    </timerEventDefinition>
-  </intermediateCatchEvent>
-
-  <!-- Whichever event fires wins; the engine cancels the other catch event -->
-  <serviceTask id="handleResponse" name="Handle Response" activiti:class="com.example.ResponseHandler"/>
-  <endEvent id="end"/>
-  <sequenceFlow id="respExit" sourceRef="messageCatch" targetRef="handleResponse"/>
-  <sequenceFlow id="timeoutExit" sourceRef="timerCatch" targetRef="handleResponse"/>
-  <sequenceFlow id="respDone" sourceRef="handleResponse" targetRef="end"/>
-</process>
+<!-- Timer event: timeout after 24 hours -->
+<sequenceFlow id="timeoutFlow" sourceRef="eventDecision" targetRef="timerCatch"/>
+<intermediateCatchEvent id="timerCatch">
+  <timerEventDefinition>
+    <timeDuration>PT24H</timeDuration>
+  </timerEventDefinition>
+</intermediateCatchEvent>
 ```
 
 ## Best Practices
@@ -327,8 +273,7 @@ List<HistoricActivityInstance> activities = historyService.createHistoricActivit
 // Change gateway behavior at runtime (advanced)
 DynamicBpmnService dynamicBpmnService = processEngine.getDynamicBpmnService();
 
-// Change the condition of an existing sequence flow (the id is the
-// sequence flow's id in the process model)
+// Change the condition of an existing sequence flow
 dynamicBpmnService.changeSequenceFlowCondition("flow1", "${amount > 5000}");
 ```
 

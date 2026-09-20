@@ -21,12 +21,16 @@ description: "Complex Gateway support status in Activiti."
 
 If your BPMN contains a `<complexGateway>`, the converter maps it to an exclusive gateway silently — no parse error or warning is emitted. The element keeps the standard BPMN 2.0 symbol (a diamond with an asterisk) in any tool, but the engine executes it as an exclusive (XOR) gateway: at most one outgoing flow is taken. The complex-specific attributes are discarded during conversion, so a process that relied on them will behave as a plain XOR decision — often in a way that is not obvious at a glance.
 
+```xml
+<complexGateway id="complex" name="Complex Decision"/>
+```
+
 ### Recommended Alternative
 
 For multi-path conditional routing (selecting one or more paths based on conditions), use an **Inclusive Gateway** instead:
 
 ```xml
-<inclusiveGateway id="gateway" name="Decision" default="defaultFlow"/>
+<inclusiveGateway id="gateway" name="Decision"/>
 
 <sequenceFlow id="pathA" sourceRef="gateway" targetRef="taskA">
   <conditionExpression>${conditionA}</conditionExpression>
@@ -35,8 +39,6 @@ For multi-path conditional routing (selecting one or more paths based on conditi
 <sequenceFlow id="pathB" sourceRef="gateway" targetRef="taskB">
   <conditionExpression>${conditionB}</conditionExpression>
 </sequenceFlow>
-
-<sequenceFlow id="defaultFlow" sourceRef="gateway" targetRef="taskDefault"/>
 ```
 
 The inclusive gateway supports selecting one or more paths simultaneously, which covers most use cases that might otherwise require a complex gateway. Give it a `default` flow (no condition) so the process cannot stall when every condition evaluates to `false` — see [Sequence Flows — Always Define Default](../elements/sequence-flows.md#3-always-define-default).

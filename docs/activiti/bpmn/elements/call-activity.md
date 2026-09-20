@@ -174,6 +174,29 @@ Variable mapping for call activities can be configured via `<activiti:in>`/`<act
 
 Variable mapping is configured in `fulfillmentProcess-extensions.json` using the same format as the [Variable Mapping](#variable-mapping) section — only the process id, call activity id, and mapped variables differ.
 
+```json
+{
+  "id": "fulfillmentProcessExtensions",
+  "extensions": {
+    "fulfillmentProcess": {
+      "mappings": {
+        "callOrderFulfillment": {
+          "inputs": {
+            "order.id": { "type": "VARIABLE", "value": "orderId" },
+            "items": { "type": "VALUE", "value": "${order.items}" },
+            "customerData": { "type": "VARIABLE", "value": "customer" }
+          },
+          "outputs": {
+            "status": { "type": "VARIABLE", "value": "fulfillmentStatus" },
+            "tracking": { "type": "VARIABLE", "value": "trackingNumber" }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ### Example 3: Dynamic Process Selection
 
 ```xml
@@ -183,6 +206,26 @@ Variable mapping is configured in `fulfillmentProcess-extensions.json` using the
 ```
 
 Variable mapping for the dynamic call uses the same extension JSON format (see the [Variable Mapping](#variable-mapping) section), with mappings declared under the target process id and this call activity's id.
+
+```json
+{
+  "id": "dynamicCallExtensions",
+  "extensions": {
+    "myProcess": {
+      "mappings": {
+        "dynamicFulfillment": {
+          "inputs": {
+            "inputOrder": { "type": "VARIABLE", "value": "order" }
+          },
+          "outputs": {
+            "fulfillmentResult": { "type": "VARIABLE", "value": "result" }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ### Example 4: Multi-Instance Call
 
@@ -201,6 +244,23 @@ Variable mapping for the dynamic call uses the same extension JSON format (see t
 ```
 
 If variable mapping is needed for each instance, configure it via process extension JSON — the same format as the [Variable Mapping](#variable-mapping) section, with mappings declared under this call activity's id.
+
+```json
+{
+  "id": "batchProcessingExtensions",
+  "extensions": {
+    "itemProcessingSubProcess": {
+      "mappings": {
+        "batchProcessing": {
+          "inputs": {
+            "currentItem": { "type": "VARIABLE", "value": "item" }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ### Example 5: Nested Call Activities
 
@@ -222,6 +282,23 @@ If variable mapping is needed for each instance, configure it via process extens
 ```
 
 To pass variables in nested calls, use process extension JSON — the same format as the [Variable Mapping](#variable-mapping) section, with mappings declared under the outer process id and each call activity's id.
+
+```json
+{
+  "id": "nestedCallsExtensions",
+  "extensions": {
+    "orderManagement": {
+      "mappings": {
+        "callOrderProcess": {
+          "inputs": {
+            "inputOrder": { "type": "VARIABLE", "value": "order" }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ## Runtime API Usage
 

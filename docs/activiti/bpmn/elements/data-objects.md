@@ -176,6 +176,7 @@ graph TD
     <documentation>Related shipments for this order</documentation>
   </dataObject>
   <dataObject id="payments" name="Payments" isCollection="true"/>
+  ...
 </process>
 ```
 

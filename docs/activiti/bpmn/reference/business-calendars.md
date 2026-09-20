@@ -174,7 +174,30 @@ return DateTime.parse(duedate).toDate();
     activiti:dueDate="2026-05-01T17:00:00"/>
 ```
 
-A complete user-task process built around these due dates is shown in [Business Calendar Usage in User Tasks](#business-calendar-usage-in-user-tasks).
+User-task examples using these due dates are in [Business Calendar Usage in User Tasks](#business-calendar-usage-in-user-tasks) below.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:process id="reviewProcess" name="Review Process"
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:activiti="http://activiti.org/bpmn">
+
+  <bpmn:startEvent id="start"/>
+
+  <bpmn:sequenceFlow sourceRef="start" targetRef="review"/>
+
+  <bpmn:userTask id="review"
+      name="Manager Review"
+      activiti:assignee="${manager}"
+      activiti:dueDate="P5D"
+      activiti:businessCalendarName="dueDate"/>
+
+  <bpmn:sequenceFlow sourceRef="review" targetRef="end"/>
+
+  <bpmn:endEvent id="end"/>
+
+</bpmn:process>
+```
 
 ### AdvancedCycleBusinessCalendar
 
@@ -342,6 +365,12 @@ if (isDuration(expression.get(0))) {
 ```
 
 The same bounding can be expressed with the `activiti:endDate` attribute; see [Timer Event Attributes](#timer-event-attributes).
+
+```xml
+<bpmn:timerEventDefinition>
+  <bpmn:timeCycle activiti:endDate="2026-12-31T23:59:59">R/PT1H</bpmn:timeCycle>
+</bpmn:timerEventDefinition>
+```
 
 ## CRON Expression Syntax
 

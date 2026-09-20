@@ -138,13 +138,12 @@ Start event types control *how* a process is triggered; candidate starters contr
 **Activiti extension** — comma-separated `activiti:candidateStarterUsers` / `activiti:candidateStarterGroups` attributes, read by `ProcessParser` into the process's `candidateStarterUsers` / `candidateStarterGroups` lists:
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <process id="onboarding" name="Onboarding"
-         xmlns:activiti="http://activiti.org/bpmn"
          activiti:candidateStarterUsers="user1, user2"
          activiti:candidateStarterGroups="group1, group2">
   <startEvent id="onboardingStart" name="Onboarding Started"/>
-  <endEvent id="onboardingEnd"/>
-  <sequenceFlow id="onboardingFlow" sourceRef="onboardingStart" targetRef="onboardingEnd"/>
+  ...
 </process>
 ```
 
@@ -158,8 +157,7 @@ Start event types control *how* a process is triggered; candidate starters contr
     </resourceAssignmentExpression>
   </potentialStarter>
   <startEvent id="onboardingStart" name="Onboarding Started"/>
-  <endEvent id="onboardingEnd"/>
-  <sequenceFlow id="onboardingFlow" sourceRef="onboardingStart" targetRef="onboardingEnd"/>
+  ...
 </process>
 ```
 
@@ -180,8 +178,7 @@ When no candidate starters are declared at all, the Spring Boot starter adds the
 ### Form Key
 
 ```xml
-<startEvent id="formStart" name="Start with Form"
-            xmlns:activiti="http://activiti.org/bpmn"
+<startEvent id="formStart" name="Start with Form" 
             activiti:formKey="startup-form.html"/>
 ```
 
@@ -194,8 +191,8 @@ When no candidate starters are declared at all, the Spring Boot starter adds the
 ### Initiator Variable
 
 ```xml
+<!-- xmlns:activiti="http://activiti.org/bpmn" required -->
 <startEvent id="initiatorStart" name="Track Initiator"
-            xmlns:activiti="http://activiti.org/bpmn"
             activiti:initiator="owner"/>
 ```
 
@@ -207,27 +204,42 @@ When no candidate starters are declared at all, the Spring Boot starter adds the
 
 Form properties declare the fields a start form collects. They use the same `<activiti:formProperty>` extension children documented for [User Tasks](../elements/user-task.md#form-properties): the BPMN converter parses them into the process model, but this engine version does not execute them at runtime (there is no form-type registry in the engine). For forms that render and validate at runtime, use `activiti:formKey` (see [Form Key](#form-key)) to point at a form defined in an external form system.
 
+```xml
+<startEvent id="formStart" name="Start with Form" 
+            activiti:formKey="order-entry-form.html"/>
+```
+
+The same form-property data also appears in a process extension JSON file:
+
+**order-entry-form-extensions.json:**
+```json
+{
+  "extensions": {
+    "orderProcess": {
+      "formProperties": {
+        "formStart": {
+          "properties": [
+            { "name": "teamSize", "type": "int", "required": true }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
 ## Complete Examples
 
 ### Example 1: Multiple Start Events
 
 ```xml
-<process id="multiStart" name="Multi Start">
+<!-- Process can be started manually or by message -->
 
-  <!-- The process can be started manually or by message -->
-  <message id="newOrder" name="New Order"/>
+<startEvent id="manualStart" name="Manual Start"/>
 
-  <startEvent id="manualStart" name="Manual Start"/>
-
-  <startEvent id="messageStart" name="Order Received">
-    <messageEventDefinition messageRef="newOrder"/>
-  </startEvent>
-
-  <endEvent id="done"/>
-
-  <sequenceFlow id="manualFlow" sourceRef="manualStart" targetRef="done"/>
-  <sequenceFlow id="messageFlow" sourceRef="messageStart" targetRef="done"/>
-</process>
+<startEvent id="messageStart" name="Order Received">
+  <messageEventDefinition messageRef="newOrder"/>
+</startEvent>
 ```
 
 **Note:** Conditional start events are not supported anywhere (section 5); timer and signal starts are supported only on main processes (sections 3 and 4).
@@ -235,19 +247,12 @@ Form properties declare the fields a start form collects. They use the same `<ac
 ### Example 2: Message Start with Form
 
 ```xml
-<process id="orderProcess" name="Order Process"
-         xmlns:activiti="http://activiti.org/bpmn">
+<startEvent id="orderStart" name="Order Received" 
+            activiti:formKey="order-entry-form.html">
+  <messageEventDefinition messageRef="orderMessage"/>
+</startEvent>
 
-  <message id="orderMessage" name="Order Message"/>
-
-  <startEvent id="orderStart" name="Order Received"
-              activiti:formKey="order-entry-form.html">
-    <messageEventDefinition messageRef="orderMessage"/>
-  </startEvent>
-
-  <endEvent id="orderEnd"/>
-  <sequenceFlow id="orderFlow" sourceRef="orderStart" targetRef="orderEnd"/>
-</process>
+<message id="orderMessage" name="Order Message"/>
 ```
 
 **Runtime Correlation:**
@@ -268,34 +273,27 @@ ProcessInstance process = runtimeService
 **Note:** Only message and error start events are supported inside event sub-processes (timer start events are not). For main processes, timer start is supported (see section 3).
 
 ```xml
-<process id="orderProcess" name="Order Process"
-         xmlns:activiti="http://activiti.org/bpmn">
+<!-- Main process with none start -->
+<startEvent id="mainStart"/>
 
-  <!-- Event definitions -->
+<!-- Event sub-process triggered by message -->
+<subProcess id="messageSubProcess" triggeredByEvent="true">
+  <startEvent id="messageStart">
+    <messageEventDefinition messageRef="triggerMessage"/>
+  </startEvent>
+
   <message id="triggerMessage" name="Trigger Message"/>
 
-  <!-- Main process with none start -->
-  <startEvent id="mainStart" name="Manual Start"/>
-  <endEvent id="mainEnd"/>
-  <sequenceFlow id="mainFlow" sourceRef="mainStart" targetRef="mainEnd"/>
+  <serviceTask id="handleMessage" 
+               name="Handle Message" 
+               activiti:class="com.example.MessageHandler"
+               activiti:async="true"/>
 
-  <!-- Event sub-process triggered by message -->
-  <subProcess id="messageSubProcess" triggeredByEvent="true">
-    <startEvent id="messageStart">
-      <messageEventDefinition messageRef="triggerMessage"/>
-    </startEvent>
-
-    <serviceTask id="handleMessage"
-                 name="Handle Message"
-                 activiti:class="com.example.MessageHandler"
-                 activiti:async="true"/>
-
-    <endEvent id="messageEnd"/>
-
-    <sequenceFlow id="subFlow1" sourceRef="messageStart" targetRef="handleMessage"/>
-    <sequenceFlow id="subFlow2" sourceRef="handleMessage" targetRef="messageEnd"/>
-  </subProcess>
-</process>
+  <endEvent id="messageEnd"/>
+  
+  <sequenceFlow id="subFlow1" sourceRef="messageStart" targetRef="handleMessage"/>
+  <sequenceFlow id="subFlow2" sourceRef="handleMessage" targetRef="messageEnd"/>
+</subProcess>
 ```
 
 ### Example 4: Start with Initial Variables
@@ -317,15 +315,8 @@ Form properties on start events only define what the form collects — they do n
 ### Example 5: Form-Based Start Event
 
 ```xml
-<process id="taskProcess" name="Task Process"
-         xmlns:activiti="http://activiti.org/bpmn">
-
-  <startEvent id="taskForm" name="Start Task"
-              activiti:formKey="task-start-form.html"/>
-
-  <endEvent id="taskEnd"/>
-  <sequenceFlow id="taskFlow" sourceRef="taskForm" targetRef="taskEnd"/>
-</process>
+<startEvent id="taskForm" name="Start Task" 
+            activiti:formKey="task-start-form.html"/>
 ```
 
 The form itself is hosted by an external form system — this engine version has no built-in form renderer. The engine's only action on the attribute is to flag the process definition with `startFormKey` (`StartEventParseHandler` → `checkStartFormKey`) so calling applications can tell that a start form exists; values collected by the form only reach the engine when the caller passes them to the start API as process variables (see [Example 4](#example-4-start-with-initial-variables)).
@@ -334,10 +325,26 @@ The form itself is hosted by an external form system — this engine version has
 
 ### Starting Processes
 
-Manual, message, and signal starts — including the with-variables overloads — are covered in the [None Start Event](#1-none-start-event-manual), [Message Start Event](#2-message-start-event), and [Signal Start Event](#4-signal-start-event) sections above. To start a specific deployed version of a process definition:
-
 ```java
-// By process definition ID (a specific deployed version)
+// By key
+ProcessInstance process = runtimeService
+    .startProcessInstanceByKey("processKey");
+
+// By key with variables
+ProcessInstance process = runtimeService
+    .startProcessInstanceByKey("processKey", 
+        Map.of("var1", "value1", "var2", 123));
+
+// By message
+ProcessInstance process = runtimeService
+    .startProcessInstanceByMessage("messageName");
+
+// By message with variables
+ProcessInstance process = runtimeService
+    .startProcessInstanceByMessage("messageName", 
+        Map.of("correlationKey", "value"));
+
+// By definition key
 ProcessInstance process = runtimeService
     .startProcessInstanceById(processDefinitionId);
 ```
@@ -347,22 +354,20 @@ ProcessInstance process = runtimeService
 To find definitions the current user may start, use `ProcessDefinitionQuery.startableByUser` / `startableByGroups` — see [Candidate Starters](#7-candidate-starters-who-can-start-the-process). To inspect which definitions carry message start events (e.g., to expose them to external senders):
 
 ```java
-// Get active process definitions
+// Get process definitions
 List<ProcessDefinition> definitions = repositoryService
     .createProcessDefinitionQuery()
     .active()
     .list();
 
 // Check for message start events via the BpmnModel
-for (ProcessDefinition definition : definitions) {
-    BpmnModel model = repositoryService.getBpmnModel(definition.getId());
-    for (FlowElement element : model.getMainProcess().getFlowElements()) {
-        if (element instanceof StartEvent) {
-            StartEvent startEvent = (StartEvent) element;
-            if (startEvent.getEventDefinitions() != null
-                    && startEvent.getEventDefinitions().get(0) instanceof MessageEventDefinition) {
-                String messageRef = ((MessageEventDefinition) startEvent.getEventDefinitions().get(0)).getMessageRef();
-            }
+BpmnModel model = repositoryService.getBpmnModel(definition.getId());
+for (FlowElement element : model.getMainProcess().getFlowElements()) {
+    if (element instanceof StartEvent) {
+        StartEvent startEvent = (StartEvent) element;
+        if (startEvent.getEventDefinitions() != null
+                && startEvent.getEventDefinitions().get(0) instanceof MessageEventDefinition) {
+            String messageRef = ((MessageEventDefinition) startEvent.getEventDefinitions().get(0)).getMessageRef();
         }
     }
 }

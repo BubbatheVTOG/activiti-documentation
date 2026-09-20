@@ -25,9 +25,9 @@ Activiti provides multiple approaches for external system integration:
 **Best for:** Standard integrations, reusable components
 
 ```xml
-<serviceTask id="processImage"
-             name="Process Image"
-             implementation="imageProcessor.processImage"/>
+<serviceTask id="processImage" 
+             name="Process Image" 
+             implementation="Process Image Connector.processImageActionName"/>
 ```
 
 **Advantages:**
@@ -44,9 +44,8 @@ Activiti provides multiple approaches for external system integration:
 **Best for:** Complex logic, custom integrations
 
 ```xml
-<serviceTask id="customIntegration"
-          xmlns:activiti="http://activiti.org/bpmn"
-          activiti:class="com.example.CustomIntegrationService"/>
+<serviceTask id="customIntegration" 
+             activiti:class="com.example.CustomIntegrationService"/>
 ```
 
 **Advantages:**
@@ -84,7 +83,7 @@ Activiti provides multiple approaches for external system integration:
 runtimeService.startProcessInstanceByKey("orderProcess", variables);
 
 // Query process state
-ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+processInstance = runtimeService.createProcessInstanceQuery()
     .processInstanceId(id)
     .singleResult();
 ```

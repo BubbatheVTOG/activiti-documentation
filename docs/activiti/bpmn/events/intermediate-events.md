@@ -80,6 +80,8 @@ runtimeService.messageEventReceived("approvalMessage", processInstanceId);
 
 Send a message to external systems:
 
+**Message Definition:**
+
 ```xml
 <serviceTask id="orderComplete" name="Complete Order"/>
 
@@ -90,12 +92,6 @@ Send a message to external systems:
 </intermediateThrowEvent>
 
 <sequenceFlow id="flow2" sourceRef="sendNotification" targetRef="endEvent"/>
-```
-
-**Message Definition:**
-
-```xml
-<message id="orderCompleteMessage" name="Order Complete"/>
 ```
 
 ### 2. Timer Intermediate Events
@@ -210,10 +206,6 @@ Send a global signal:
 
 **Signal Definition:**
 
-```xml
-<signal id="completionSignal" name="Completion Signal"/>
-```
-
 **Use Case:** Notify other processes of completion
 
 #### Signal Scope and Signal Expressions
@@ -249,25 +241,23 @@ Signals are **global by default**: a throw event wakes every waiting subscriptio
 
 ### 4. Link Intermediate Events
 
-Create internal process jumps. Link events are supported as of 8.7.0 using the id-based syntax: a throw's `<linkEventDefinition>` carries a `<target>` element holding the catch's definition `id`, and a catch's definition carries one or more `<source>` elements holding the throw definitions' `id`s — the `name` attribute is parsed but not used for matching. Links work only within the same process, and deployment validation rejects a throw without a `<target>` or a catch without any `<source>`.
+Create internal process jumps without drawing sequence flows. Link events are supported as of 8.7.0 using an id-based pairing: a throw's `<linkEventDefinition>` carries a `<target>` element holding the catch definition's `id`, and a catch's definition carries one or more `<source>` elements holding the contributing throw definitions' `id`s. The legacy `name` attribute is still parsed but not used for matching, links work only within the same process, and the process validator rejects a throw without a `<target>` or a catch without any `<source>`. The complete, current throw/catch pattern — including multiple throws to one catch — is in [Link Events](./link-events.md).
+
+The snippets below show the pre-8.7.0 name-based form, kept for reference; current versions require the id-based pairing described above.
 
 ```xml
-<!-- Link throw: <target> holds the id of the catch event's linkEventDefinition -->
 <intermediateThrowEvent id="jumpToReview">
-  <linkEventDefinition id="jumpToReviewLinkId">
-    <target>reviewEntryPointLinkId</target>
-  </linkEventDefinition>
+  <linkEventDefinition name="ReviewLink"/>
 </intermediateThrowEvent>
-
-<!-- Link catch: one <source> per contributing throw definition -->
-<intermediateCatchEvent id="reviewEntryPoint">
-  <linkEventDefinition id="reviewEntryPointLinkId">
-    <source>jumpToReviewLinkId</source>
-  </linkEventDefinition>
-</intermediateCatchEvent>
 ```
 
-**Use Case:** Avoid complex flow lines, create clear jump points. The complete throw/catch pattern, including multiple throws to one catch, is in [Link Events](./link-events.md).
+**Use case:** avoid long flow lines and keep multi-entry diagrams readable.
+
+```xml
+<intermediateCatchEvent id="reviewEntryPoint">
+  <linkEventDefinition name="ReviewLink"/>
+</intermediateCatchEvent>
+```
 
 ### 5. Compensate Intermediate Events
 
@@ -307,15 +297,9 @@ Trigger compensation (undo) operations:
     <messageEventDefinition messageRef="paymentMessage"/>
   </intermediateCatchEvent>
   
-  <!-- Payment deadline: if the 24h timer expires before the payment message
-       arrives, the default flow rejects the order. The 'paymentReceived'
-       variable is set by the 3-argument messageEventReceived call shown in
-       the Runtime API section below. -->
-  <exclusiveGateway id="paymentCheck" default="rejectFlow"/>
+  <exclusiveGateway id="paymentCheck"/>
   
   <serviceTask id="processOrder" name="Process Order"/>
-
-  <serviceTask id="rejectOrder" name="Reject Unpaid Order"/>
   
   <!-- Send completion signal -->
   <intermediateThrowEvent id="notifyCompletion">
@@ -334,12 +318,6 @@ Trigger compensation (undo) operations:
   </sequenceFlow>
   <sequenceFlow id="flow7" sourceRef="processOrder" targetRef="notifyCompletion"/>
   <sequenceFlow id="flow8" sourceRef="notifyCompletion" targetRef="end"/>
-  <sequenceFlow id="rejectFlow" sourceRef="paymentCheck" targetRef="rejectOrder"/>
-  <sequenceFlow id="flow9" sourceRef="rejectOrder" targetRef="end"/>
-
-  <!-- Event definitions -->
-  <message id="paymentMessage" name="Payment Received"/>
-  <signal id="orderComplete" name="Order Complete"/>
 </process>
 ```
 

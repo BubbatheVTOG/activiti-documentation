@@ -417,6 +417,11 @@ Boundary events inside subprocesses must be siblings of the activity within the 
 
 To deliver a message to a boundary event, use `RuntimeService.messageEventReceived(...)` as shown in the [Message Boundary Event](#4-message-boundary-event) section.
 
+```java
+// Correlate message with boundary event
+runtimeService.messageEventReceived("cancelApproval", executionId);
+```
+
 ### Handling Timer Boundary Events
 
 ```java
@@ -425,6 +430,13 @@ To deliver a message to a boundary event, use `RuntimeService.messageEventReceiv
 List<Job> timerJobs = managementService.createJobQuery()
     .processInstanceId(processInstanceId)
     .list();
+```
+
+### Error Handling
+
+```java
+// Errors from boundary events can be caught
+// by error intermediate events or propagated
 ```
 
 ## Best Practices

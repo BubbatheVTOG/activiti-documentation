@@ -277,6 +277,7 @@ Activiti extends BPMN 2.0 with several proprietary features that enhance workflo
 
 ### 1. **Field Injection**
 Inject values into delegates using `<activiti:field>`:
+
 ```xml
 <serviceTask id="service1" activiti:class="com.example.MyDelegate">
   <extensionElements>
@@ -292,6 +293,7 @@ Inject values into delegates using `<activiti:field>`:
 
 ### 2. **Task Listeners**
 Execute custom logic at task lifecycle events:
+
 ```xml
 <userTask id="task1" name="Approval">
   <extensionElements>
@@ -310,6 +312,7 @@ Execute custom logic at task lifecycle events:
 
 ### 3. **Execution Listeners**
 Hook into activity execution:
+
 ```xml
 <serviceTask id="service1" name="Process Data">
   <extensionElements>
@@ -326,18 +329,33 @@ Hook into activity execution:
 - `take` - When sequence flow is taken
 
 ### 4. **Skip Expression**
+
+The field-injection configuration documented in [Common Activity Extensions](#common-activity-extensions) above, shown for reference:
+
+```xml
+<serviceTask id="service1" activiti:class="com.example.MyDelegate">
+  <extensionElements>
+    <activiti:field name="service" expression="${beanName}"/>
+    <activiti:field name="configValue" stringValue="some value"/>
+  </extensionElements>
+</serviceTask>
+```
+
 Conditionally skip activities:
+
 ```xml
 <userTask id="task1" name="Optional Review" activiti:skipExpression="${skipReview}"/>
 ```
 
 ### 5. **Async Execution**
 Run activities asynchronously:
+
 ```xml
 <serviceTask id="service1" name="Long Running Task" activiti:async="true"/>
 ```
 
 **Note:** Job priority is configured at runtime via Management Service, not through BPMN properties:
+
 ```java
 // Set job retries via Management Service
 managementService.setJobRetries(jobId, 3);
@@ -345,6 +363,7 @@ managementService.setJobRetries(jobId, 3);
 
 ### 6. **Job Retry Configuration**
 Configure retry policies for failed jobs:
+
 ```xml
 <serviceTask id="service1" activiti:async="true">
   <extensionElements>
@@ -561,6 +580,7 @@ All BPMN elements support these common Activiti features:
 Execute activities multiple times:
 
 **Using Collection (Activiti Extension):**
+
 ```xml
 <userTask id="task1" name="Review">
   <multiInstanceLoopCharacteristics
@@ -572,6 +592,7 @@ Execute activities multiple times:
 ```
 
 **Using Loop Cardinality (BPMN Standard):**
+
 ```xml
 <userTask id="task1" name="Review">
   <multiInstanceLoopCharacteristics isSequential="true">
@@ -582,6 +603,7 @@ Execute activities multiple times:
 
 ### Boundary Events
 Attach exception handling (boundary events are siblings, not children):
+
 ```xml
 <serviceTask id="service1" name="Process"/>
 <boundaryEvent id="timeout" attachedToRef="service1" cancelActivity="true">
@@ -593,6 +615,7 @@ Attach exception handling (boundary events are siblings, not children):
 
 ### Extension Elements
 Add custom metadata:
+
 ```xml
 <userTask id="task1">
   <extensionElements>

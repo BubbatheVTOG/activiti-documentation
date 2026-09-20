@@ -513,6 +513,21 @@ public class PaymentRefunder implements JavaDelegate {
 
 ### Compensation Execution Order
 
+```java
+// When multiple compensations are triggered, they execute in REVERSE order
+// of the original activity completion
+
+// Original order:
+// 1. reserveInventory (completed first)
+// 2. processPayment (completed second)
+// 3. createShipment (completed third)
+
+// Compensation order (reverse):
+// 1. createShipment compensation (executed first)
+// 2. processPayment compensation (executed second)
+// 3. reserveInventory compensation (executed third)
+```
+
 Reverse-order execution (reverse of the original completion order) is walked step by step in the How it works notes of the [Intermediate Compensation Throw Event](#2-intermediate-compensation-throw-event) section.
 
 ### Monitoring Compensation
@@ -617,12 +632,15 @@ public class LoggedCompensator implements JavaDelegate {
 ```java
 @Test
 public void testCompensationFlow() {
-    // Start the process with the failure condition in place, so the
-    // shipmentValidation gateway takes the compensation path
-    Map<String, Object> vars = new HashMap<>();
-    vars.put("shipmentValid", false);
-    String processInstanceId = runtimeService.startProcessInstanceByKey("orderProcess", vars);
-
+    // Start process
+    String processInstanceId = runtimeService.startProcessInstanceByKey("orderProcess");
+    
+    // Complete activities
+    // ...
+    
+    // Trigger failure
+    runtimeService.setVariable(processInstanceId, "shipmentValid", false);
+    
     // Verify compensation executed
     List<HistoricActivityInstance> compensationActivities = 
         historyService.createHistoricActivityInstanceQuery()

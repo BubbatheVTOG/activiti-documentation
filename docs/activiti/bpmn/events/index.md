@@ -113,17 +113,15 @@ Events represent **something that happens** during the execution of a process. T
 <error id="paymentError" name="Payment Error" errorCode="PAY001"/>
 ```
 
+The runtime side is the `BpmnError` throw shown in the Error Handling section under Activiti Customizations; the boundary event that catches it is part of the model.
+
 ### Link Event Definition
 
-Supported as of 8.7.0. A throw's definition carries a `<target>` element holding the catch's definition `id`, and a catch's definition carries one or more `<source>` elements holding the throw definitions' `id`s — the `name` attribute is parsed but not used for matching.
-
 ```xml
-<linkEventDefinition id="link1">
-  <target>someCatchLinkId</target>
-</linkEventDefinition>
+<linkEventDefinition id="link1"/>
 ```
 
-The complete throw/catch pattern, including multiple-source catches, is in [Link Events](./link-events.md).
+The snippet shows the element shape only. Link events are supported as of 8.7.0, and in current versions a throw's `<linkEventDefinition>` must carry a `<target>` holding the catch definition's `id`, while a catch's definition must carry at least one `<source>` with a contributing throw definition's `id` — the `name` attribute is parsed but not used for matching. The complete, valid pattern, including multiple-source catches, is in [Link Events](./link-events.md).
 
 ### Compensate Event Definition
 
@@ -220,11 +218,9 @@ The complete throw/catch pattern, including multiple-source catches, is in [Link
   <signalEventDefinition signalRef="processCompleted"/>
 </intermediateThrowEvent>
 
-<!-- Link throw (8.7.0+): <target> holds the id of the catch event's linkEventDefinition; see Link Events -->
+<!-- Link throw -->
 <intermediateThrowEvent id="jumpToSection" name="Jump">
-  <linkEventDefinition id="jumpToSectionLinkId">
-    <target>section2LinkId</target>
-  </linkEventDefinition>
+  <linkEventDefinition name="section2"/>
 </intermediateThrowEvent>
 
 <!-- Compensate throw -->
@@ -454,13 +450,23 @@ runtimeService.messageEventReceived("orderReceived", processInstanceId);
 
 // Send message to start process
 ProcessInstance process = runtimeService.startProcessInstanceByMessage("orderReceived");
-```
 
-The three-argument form that passes variables is shown in the [Message Correlation](#message-correlation) section above.
+// Send message with variables
+runtimeService.messageEventReceived("orderReceived", 
+    processInstanceId,
+    Map.of("orderId", "123", "amount", 500.0));
+```
 
 ### Broadcasting Signals
 
-Broadcasting a signal, with or without variables, is shown in the [Signal Broadcasting](#signal-broadcasting) section above.
+```java
+// Broadcast signal (all waiting processes)
+runtimeService.signalEventReceived("paymentCompleted");
+
+// Signal with variables
+runtimeService.signalEventReceived("paymentCompleted", 
+    Map.of("transactionId", "txn123"));
+```
 
 ### Timer Management
 
@@ -476,7 +482,12 @@ managementService.deleteJob(timerJobId);
 
 ### Error Handling
 
-The runtime side is the `BpmnError` throw shown in the Error Handling section under Activiti Customizations; the boundary event that catches it is part of the model.
+```java
+// Throw error from JavaDelegate
+public void execute(DelegateExecution execution) {
+throw new BpmnError("PAY001", "Payment failed");
+}
+```
 
 ## Related Documentation
 

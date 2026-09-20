@@ -160,7 +160,7 @@ taskService.addUserIdentityLink(taskId, "john", IdentityLinkType.ASSIGNEE);
 taskService.addUserIdentityLink(taskId, "alice", IdentityLinkType.CANDIDATE);
 taskService.addUserIdentityLink(taskId, "manager", IdentityLinkType.OWNER);
 
-// Query tasks for a candidate group (built-in "candidate" link type)
+// Query tasks by custom identity link
 List<Task> tasks = taskService.createTaskQuery()
     .taskCandidateGroup("auditors")
     .list();
@@ -215,20 +215,20 @@ Associate a form with the task:
 Set task deadline:
 
 ```xml
-<userTask id="urgentTask" name="Urgent Review" activiti:dueDate="P3D"/>
+<userTask id="urgentTask" name="Urgent Review" activiti:dueDate="${addDays(now(), 3)}"/>
 ```
 
 **Expression Examples:**
 
 ```xml
-<!-- Absolute date-time (ISO 8601) -->
-<userTask activiti:dueDate="2026-05-01T17:00:00"/>
+<!-- Fixed date -->
+<userTask activiti:dueDate="2024-12-31"/>
 
-<!-- Relative: due in 7 days (ISO 8601 period) -->
-<userTask activiti:dueDate="P7D"/>
+<!-- EL Expression -->
+<userTask activiti:dueDate="${dueDateCalculator.calculate()}"/>
 
-<!-- EL expression (variable) -->
-<userTask activiti:dueDate="${taskDueDate}"/>
+<!-- EL Expression -->
+<userTask activiti:dueDate="${calendar.addDays(new Date(), 7)}"/>
 ```
 
 All supported due date formats (ISO 8601 periods, absolute date-times, CRON via the `cycle` calendar) are documented in [Business Calendars](../reference/business-calendars.md).
@@ -249,8 +249,8 @@ Define working time calculations:
 
 ```xml
 <userTask id="workingDaysTask" name="Review" 
-          activiti:dueDate="P3D"
-          activiti:businessCalendarName="businessDays"/>
+          activiti:dueDate="${addBusinessDays(3)}"
+          activiti:businessCalendarName="standard"/>
 ```
 
 A complete business-days calendar (skipping weekends) and how to register it with the engine are in [Business Calendars](../reference/business-calendars.md).
@@ -402,6 +402,17 @@ Execute task for multiple users:
 
 BPMN-standard `<inputDataItem>`/`<outputDataItem>` data associations (including `<assignment><from>/<to>`) are **not parsed** by the engine — they are silently ignored. Multi-instance iteration is driven solely by the `activiti:collection` and `activiti:elementVariable` attributes (plus `completionCondition`); the working multi-instance configuration is in [Multi-Instance User Tasks](#multi-instance-user-tasks) above.
 
+```xml
+<userTask id="reviewTask" name="Review">
+  <multiInstanceLoopCharacteristics 
+    isSequential="false"
+    activiti:collection="${reviewers}"
+    activiti:elementVariable="reviewer">
+    <completionCondition>${reviewCount >= requiredApprovals}</completionCondition>
+  </multiInstanceLoopCharacteristics>
+</userTask>
+```
+
 > **Warning:** If an `<inputDataItem name="...">` element is present, its `name` attribute **is** parsed and silently **overrides** `activiti:elementVariable`. Don't add `inputDataItem`/`outputDataItem` elements to multi-instance characteristics (the `collection` attribute of `outputDataItem` is also ignored).
 
 ### Form Properties
@@ -447,7 +458,7 @@ Define form fields:
           name="Approve Request" 
           activiti:assignee="${requestManager}"
           activiti:candidateGroups="approvers"
-          activiti:dueDate="P5D"
+          activiti:dueDate="${addDays(now(), 5)}"
           activiti:priority="70"
           activiti:formKey="approval-form"
           activiti:category="approval">

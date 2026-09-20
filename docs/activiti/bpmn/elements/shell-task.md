@@ -108,7 +108,7 @@ The `ShellExecutorContext` passed to the factory has these getters: `getArgList(
   <extensionElements>
     <activiti:field name="command" stringValue="/bin/rm"/>
     <activiti:field name="arg1" stringValue="-rf"/>
-    <activiti:field name="arg2" stringValue="/tmp/workflow-cache"/>
+    <activiti:field name="arg2" stringValue="/tmp/workflow-*.tmp"/>
   </extensionElements>
 </serviceTask>
 ```

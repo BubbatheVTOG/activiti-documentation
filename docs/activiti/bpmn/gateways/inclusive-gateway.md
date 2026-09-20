@@ -58,8 +58,7 @@ When paths converge at an Inclusive Gateway:
 Simple OR decision with multiple conditions:
 
 ```xml
-<process id="notificationProcess" name="Notification Process"
-         xmlns:activiti="http://activiti.org/bpmn">
+<process id="notificationProcess" name="Notification Process">
   <startEvent id="start"/>
   
   <serviceTask id="processOrder" name="Process Order" activiti:class="com.example.OrderProcessor"/>
@@ -154,8 +153,7 @@ Conditions are evaluated as EL expressions, so they can call methods on process 
 Process through multiple channels simultaneously:
 
 ```xml
-<process id="multiChannelProcess" name="Multi-Channel Processing"
-         xmlns:activiti="http://activiti.org/bpmn">
+<process id="multiChannelProcess" name="Multi-Channel Processing">
   <startEvent id="start"/>
   
   <serviceTask id="receiveRequest" name="Receive Request" activiti:class="com.example.RequestReceiver"/>
@@ -204,8 +202,7 @@ Process through multiple channels simultaneously:
 ### Example 1: Order Fulfillment with Multiple Options
 
 ```xml
-<process id="orderFulfillment" name="Order Fulfillment"
-         xmlns:activiti="http://activiti.org/bpmn">
+<process id="orderFulfillment" name="Order Fulfillment">
   <startEvent id="start"/>
   
   <userTask id="receiveOrder" name="Receive Order" activiti:assignee="${orderClerk}"/>
@@ -262,8 +259,7 @@ Process through multiple channels simultaneously:
 ### Example 2: Multi-Step Approval Process
 
 ```xml
-<process id="approvalProcess" name="Multi-Step Approval"
-         xmlns:activiti="http://activiti.org/bpmn">
+<process id="approvalProcess" name="Multi-Step Approval">
   <startEvent id="start"/>
   
   <userTask id="submitRequest" name="Submit Request" activiti:assignee="${requester}"/>

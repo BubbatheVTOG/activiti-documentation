@@ -138,7 +138,19 @@ Conditionally skip a sequence flow (i.e., the flow is not taken):
 
 ### 5. Expression Methods
 
+```xml
+<sequenceFlow id="spElFlow" name="SPeL Condition">
+  <conditionExpression>${orderValidator.isExpedited(order)}</conditionExpression>
+</sequenceFlow>
+```
+
 Conditions can call bean methods on process variables — e.g. `${orderValidator.isExpedited(order)}`. The full method-call syntax (simple methods, parameters, EL bean methods) is in the [Method Calls](#method-calls) block under Condition Expression Syntax below.
+
+```xml
+<sequenceFlow id="methodFlow" name="Method Evaluation">
+  <conditionExpression>${checkInventory(item)}</conditionExpression>
+</sequenceFlow>
+```
 
 ## Default Flows
 
@@ -257,6 +269,34 @@ A default flow specifies the sequence flow to take when no condition expressions
 ```
 
 ### Example 2: Amount-Based Routing
+
+```xml
+<exclusiveGateway id="amountGateway" name="Order Amount">
+
+  <sequenceFlow id="smallOrder"
+                sourceRef="amountGateway"
+                targetRef="autoApprove">
+    <conditionExpression>${orderAmount &lt; 1000}</conditionExpression>
+  </sequenceFlow>
+
+  <sequenceFlow id="mediumOrder"
+                sourceRef="amountGateway"
+                targetRef="managerApproval">
+    <conditionExpression>${orderAmount >= 1000 &amp;&amp; orderAmount &lt; 10000}</conditionExpression>
+  </sequenceFlow>
+
+  <sequenceFlow id="largeOrder"
+                sourceRef="amountGateway"
+                targetRef="directorApproval">
+    <conditionExpression>${orderAmount >= 10000}</conditionExpression>
+  </sequenceFlow>
+
+  <sequenceFlow id="defaultOrder"
+                sourceRef="amountGateway"
+                targetRef="standardProcessing"/>
+
+</exclusiveGateway>
+```
 
 The threshold conditions are the same as those in [Numeric Conditions](#2-numeric-conditions), combined in one gateway with a default flow (see [Default Flows](#default-flows)) so unmatched amounts still have a path.
 
@@ -398,13 +438,46 @@ The threshold conditions are the same as those in [Numeric Conditions](#2-numeri
 
 ### 2. Mutually Exclusive Conditions
 
+```xml
+<!-- GOOD: Clear boundaries -->
+<sequenceFlow><conditionExpression>${amount &lt; 1000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount >= 1000 &amp;&amp; amount &lt; 10000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount >= 10000}</conditionExpression></sequenceFlow>
+
+<!-- BAD: Overlapping conditions -->
+<sequenceFlow><conditionExpression>${amount &lt; 1000}</conditionExpression></sequenceFlow>
+<sequenceFlow><conditionExpression>${amount &lt;= 1000}</conditionExpression></sequenceFlow>
+```
+
 Give ranges clear, non-overlapping boundaries — the failure mode and the fix are shown in the [Overlapping Conditions](#2-overlapping-conditions) pitfall below.
 
 ### 3. Always Define Default
 
+```xml
+<!-- GOOD: Has default flow -->
+<exclusiveGateway>
+  <sequenceFlow><conditionExpression>${condition1}</conditionExpression></sequenceFlow>
+  <sequenceFlow><conditionExpression>${condition2}</conditionExpression></sequenceFlow>
+  <sequenceFlow id="elseFlow"/> <!-- Default -->
+</exclusiveGateway>
+
+<!-- BAD: No default -->
+<exclusiveGateway>
+  <sequenceFlow><conditionExpression>${condition1}</conditionExpression></sequenceFlow>
+</exclusiveGateway>
+```
+
 A gateway whose conditions can all evaluate to `false` has no path — the [Missing Default Flow](#1-missing-default-flow) pitfall below shows the failure and the fix.
 
 ### 4. Keep Conditions Simple
+
+```xml
+<!-- GOOD: Simple, readable -->
+<conditionExpression>${orderAmount > threshold}</conditionExpression>
+
+<!-- BAD: Complex, hard to maintain -->
+<conditionExpression>${orderAmount > (baseAmount * multiplier) + adjustment - discount}</conditionExpression>
+```
 
 If an expression needs nested arithmetic to stay readable, extract it into a bean method — see the [Complex Expressions in XML](#5-complex-expressions-in-xml) pitfall below.
 

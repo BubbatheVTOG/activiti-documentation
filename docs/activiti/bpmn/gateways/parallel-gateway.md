@@ -124,9 +124,8 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <parallelGateway id="split"/>
 
 <!-- Multi-instance user task -->
-<userTask id="reviewTask" name="Parallel Reviews"
-         xmlns:activiti="http://activiti.org/bpmn">
-  <multiInstanceLoopCharacteristics
+<userTask id="reviewTask" name="Parallel Reviews">
+  <multiInstanceLoopCharacteristics 
     isSequential="false"
     activiti:collection="${reviewers}"
     activiti:elementVariable="reviewer">
@@ -134,9 +133,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 </userTask>
 
 <!-- Parallel service task -->
-<serviceTask id="notifyTask" name="Send Notifications"
-             xmlns:activiti="http://activiti.org/bpmn"
-             activiti:async="true"/>
+<serviceTask id="notifyTask" name="Send Notifications" activiti:async="true"/>
 
 <parallelGateway id="join"/>
 ```
@@ -146,33 +143,11 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 `activiti:async` on the fork defers the split itself: the engine persists a job and the branch executions are activated by the async executor instead of the calling thread. This requires the async executor (enabled by default in the Spring Boot starter; see [Async Execution](../reference/async-execution.md)).
 
 ```xml
-<process id="deferredProcess" name="Deferred Split"
-         xmlns:activiti="http://activiti.org/bpmn">
+<parallelGateway id="deferredSplit" activiti:async="true"/>
 
-  <startEvent id="start"/>
-
-  <!-- The split is deferred to the async executor -->
-  <parallelGateway id="deferredSplit" activiti:async="true"/>
-  <sequenceFlow id="entry" sourceRef="start" targetRef="deferredSplit"/>
-
-  <sequenceFlow id="b1" sourceRef="deferredSplit" targetRef="asyncTask1"/>
-  <sequenceFlow id="b2" sourceRef="deferredSplit" targetRef="asyncTask2"/>
-
-  <!-- Branches may be async as well -->
-  <serviceTask id="asyncTask1" name="Async Task 1"
-               activiti:delegateExpression="${exampleTask}"
-               activiti:async="true"/>
-  <serviceTask id="asyncTask2" name="Async Task 2"
-               activiti:delegateExpression="${exampleTask}"
-               activiti:async="true"/>
-
-  <parallelGateway id="deferredJoin"/>
-  <sequenceFlow id="j1" sourceRef="asyncTask1" targetRef="deferredJoin"/>
-  <sequenceFlow id="j2" sourceRef="asyncTask2" targetRef="deferredJoin"/>
-
-  <endEvent id="end"/>
-  <sequenceFlow id="exit" sourceRef="deferredJoin" targetRef="end"/>
-</process>
+<!-- Tasks will be activated asynchronously -->
+<serviceTask id="asyncTask1" name="Async Task 1" activiti:async="true"/>
+<serviceTask id="asyncTask2" name="Async Task 2" activiti:async="true"/>
 ```
 
 ## Complete Examples
@@ -180,10 +155,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Example 1: Order Processing Pipeline
 
 ```xml
-<process id="orderPipeline" name="Order Processing Pipeline"
-         xmlns:activiti="http://activiti.org/bpmn">
-
-  <startEvent id="start" name="Start Order Processing"/>
+<startEvent id="start" name="Start Order Processing"/>
 
 <sequenceFlow id="flow1" sourceRef="start" targetRef="orderProcessingSplit"/>
 
@@ -226,18 +198,14 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 
 <sequenceFlow id="flow8" sourceRef="orderProcessingJoin" targetRef="fulfillOrder"/>
 <sequenceFlow id="flow9" sourceRef="fulfillOrder" targetRef="end"/>
-</process>
 ```
 
 ### Example 2: Notification Fan-Out
 
 ```xml
-<process id="notificationFanout" name="Notification Fan-Out"
-         xmlns:activiti="http://activiti.org/bpmn">
+<startEvent id="start"/>
 
-  <startEvent id="start"/>
-
-  <sequenceFlow id="flow1" sourceRef="start" targetRef="notificationSplit"/>
+<sequenceFlow id="flow1" sourceRef="start" targetRef="notificationSplit"/>
 
 <parallelGateway id="notificationSplit" name="Send Notifications"/>
 
@@ -280,18 +248,14 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <endEvent id="end"/>
 
 <sequenceFlow id="flow10" sourceRef="notificationJoin" targetRef="end"/>
-</process>
 ```
 
 ### Example 3: Data Aggregation
 
 ```xml
-<process id="dataAggregation" name="Data Aggregation"
-         xmlns:activiti="http://activiti.org/bpmn">
+<startEvent id="start"/>
 
-  <startEvent id="start"/>
-
-  <sequenceFlow id="flow1" sourceRef="start" targetRef="dataFetchSplit"/>
+<sequenceFlow id="flow1" sourceRef="start" targetRef="dataFetchSplit"/>
 
 <!-- Fetch data from multiple sources in parallel -->
 <parallelGateway id="dataFetchSplit" name="Fetch Data"/>
@@ -303,19 +267,19 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <serviceTask id="fetchFromDB"
               name="Fetch from Database"
               activiti:delegateExpression="${dataService.fetchFromDb()}"
-              activiti:resultVariable="dbData"
+              activiti:resultVariableName="dbData"
               activiti:async="true"/>
 
 <serviceTask id="fetchFromAPI"
               name="Fetch from External API"
               activiti:delegateExpression="${dataService.fetchFromApi()}"
-              activiti:resultVariable="apiData"
+              activiti:resultVariableName="apiData"
               activiti:async="true"/>
 
 <serviceTask id="fetchFromCache"
               name="Fetch from Cache"
               activiti:delegateExpression="${dataService.fetchFromCache()}"
-              activiti:resultVariable="cacheData"
+              activiti:resultVariableName="cacheData"
               activiti:async="true"/>
 
 <!-- Wait for all data sources -->
@@ -343,18 +307,14 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <endEvent id="end"/>
 
 <sequenceFlow id="flow9" sourceRef="aggregateData" targetRef="end"/>
-</process>
 ```
 
 ### Example 4: Parallel Approvals
 
 ```xml
-<process id="parallelApprovals" name="Parallel Approvals"
-         xmlns:activiti="http://activiti.org/bpmn">
+<startEvent id="start"/>
 
-  <startEvent id="start"/>
-
-  <sequenceFlow id="flow1" sourceRef="start" targetRef="approvalSplit"/>
+<sequenceFlow id="flow1" sourceRef="start" targetRef="approvalSplit"/>
 
 <parallelGateway id="approvalSplit" name="Request Approvals"/>
 
@@ -388,7 +348,6 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <endEvent id="end"/>
 
 <sequenceFlow id="flow8" sourceRef="approvalJoin" targetRef="end"/>
-</process>
 ```
 
 ## Runtime API Usage

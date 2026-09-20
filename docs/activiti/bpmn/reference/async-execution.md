@@ -378,6 +378,7 @@ Delay async activation:
 ```
 
 **Runtime Configuration:**
+
 ```java
 // Set job retries to retry a failed job
 managementService.setJobRetries(jobId, 3);
@@ -475,6 +476,7 @@ int maxPoolSize = config.getAsyncExecutorMaxPoolSize();
 ## Common Pitfalls
 
 ### 1. **Too Many Async Tasks**
+
 ```xml
 <!-- BAD: Everything async -->
 <serviceTask activiti:async="true"/>
@@ -485,6 +487,7 @@ int maxPoolSize = config.getAsyncExecutorMaxPoolSize();
 **Solution:** Use async execution only for long-running operations.
 
 ### 2. **No Retry Configuration**
+
 ```xml
 <!-- BAD: No retry policy -->
 <serviceTask id="unreliableApi" 
@@ -495,6 +498,7 @@ int maxPoolSize = config.getAsyncExecutorMaxPoolSize();
 **Solution:** Add a retry policy for external calls that can fail transiently.
 
 ### 3. **Transaction Issues**
+
 ```java
 // BAD: Modifying process variables outside transaction
 public void execute(DelegateExecution execution) {
@@ -506,6 +510,7 @@ public void execute(DelegateExecution execution) {
 **Solution:** Use proper transaction management
 
 ### 4. **Ignoring Job Failures**
+
 ```java
 // BAD: No error handling
 try {

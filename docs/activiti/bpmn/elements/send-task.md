@@ -12,7 +12,16 @@ A Send Task (`sendTask`) represents a one-way message sent from the process to a
 ## BPMN Element
 
 ```xml
-<sendTask id="notifyCustomer" name="Notify Customer" activiti:type="mail"/>
+<sendTask id="notifyCustomer"
+            name="Notify Customer"
+            activiti:type="mail">
+  <extensionElements>
+    <activiti:field name="to" expression="${customer.email}"/>
+    <activiti:field name="subject" stringValue="Order Shipped"/>
+    <activiti:field name="html" stringValue="true"/>
+    <activiti:field name="text" expression="${notificationBody}"/>
+  </extensionElements>
+</sendTask>
 ```
 
 The full example with the mail fields is in [Mail Send Task](#mail-send-task).
