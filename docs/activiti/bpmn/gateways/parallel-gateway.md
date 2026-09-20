@@ -15,8 +15,11 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <parallelGateway id="parallel" name="Parallel Processing"/>
 ```
 
-**BPMN 2.0 Symbol:** ⊞ (circle with plus)  
-**Activiti Extensions:** Complex parallel execution, multi-instance integration
+**BPMN 2.0 Standard:** Supported
+
+**BPMN 2.0 Symbol:** a bold "+" inside a circle
+
+**Activiti Extensions:** Async boundaries on any flow node (requires the async executor — see [Async Execution](../reference/async-execution.md))
 
 ## Key Features
 
@@ -28,10 +31,8 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 - **Convergence** - Synchronize parallel flows
 
 ### Activiti Customizations
-- **Async Execution** - Background parallel processing
-- **Multi-Instance Integration** - Combined parallel patterns
-- **Execution Listeners** - Track parallel branches
-- **Complex Synchronization** - Advanced join patterns
+- **Async Boundaries** - `activiti:async` on any flow node, including the gateway itself (requires the async executor; see [Async Execution](../reference/async-execution.md))
+- **Multi-Instance Composition** - Parallel branches can host multi-instance activities; the gateway itself does not loop (see [Multi-Instance](../reference/multi-instance.md))
 
 ## Configuration Options
 
@@ -123,8 +124,9 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <parallelGateway id="split"/>
 
 <!-- Multi-instance user task -->
-<userTask id="reviewTask" name="Parallel Reviews">
-  <multiInstanceLoopCharacteristics 
+<userTask id="reviewTask" name="Parallel Reviews"
+         xmlns:activiti="http://activiti.org/bpmn">
+  <multiInstanceLoopCharacteristics
     isSequential="false"
     activiti:collection="${reviewers}"
     activiti:elementVariable="reviewer">
@@ -132,19 +134,45 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 </userTask>
 
 <!-- Parallel service task -->
-<serviceTask id="notifyTask" name="Send Notifications" activiti:async="true"/>
+<serviceTask id="notifyTask" name="Send Notifications"
+             xmlns:activiti="http://activiti.org/bpmn"
+             activiti:async="true"/>
 
 <parallelGateway id="join"/>
 ```
 
 ### Deferred Activation
 
-```xml
-<parallelGateway id="deferredSplit" activiti:async="true"/>
+`activiti:async` on the fork defers the split itself: the engine persists a job and the branch executions are activated by the async executor instead of the calling thread. This requires the async executor (enabled by default in the Spring Boot starter; see [Async Execution](../reference/async-execution.md)).
 
-<!-- Tasks will be activated asynchronously -->
-<serviceTask id="asyncTask1" name="Async Task 1" activiti:async="true"/>
-<serviceTask id="asyncTask2" name="Async Task 2" activiti:async="true"/>
+```xml
+<process id="deferredProcess" name="Deferred Split"
+         xmlns:activiti="http://activiti.org/bpmn">
+
+  <startEvent id="start"/>
+
+  <!-- The split is deferred to the async executor -->
+  <parallelGateway id="deferredSplit" activiti:async="true"/>
+  <sequenceFlow id="entry" sourceRef="start" targetRef="deferredSplit"/>
+
+  <sequenceFlow id="b1" sourceRef="deferredSplit" targetRef="asyncTask1"/>
+  <sequenceFlow id="b2" sourceRef="deferredSplit" targetRef="asyncTask2"/>
+
+  <!-- Branches may be async as well -->
+  <serviceTask id="asyncTask1" name="Async Task 1"
+               activiti:delegateExpression="${exampleTask}"
+               activiti:async="true"/>
+  <serviceTask id="asyncTask2" name="Async Task 2"
+               activiti:delegateExpression="${exampleTask}"
+               activiti:async="true"/>
+
+  <parallelGateway id="deferredJoin"/>
+  <sequenceFlow id="j1" sourceRef="asyncTask1" targetRef="deferredJoin"/>
+  <sequenceFlow id="j2" sourceRef="asyncTask2" targetRef="deferredJoin"/>
+
+  <endEvent id="end"/>
+  <sequenceFlow id="exit" sourceRef="deferredJoin" targetRef="end"/>
+</process>
 ```
 
 ## Complete Examples
@@ -152,7 +180,10 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 ### Example 1: Order Processing Pipeline
 
 ```xml
-<startEvent id="start" name="Start Order Processing"/>
+<process id="orderPipeline" name="Order Processing Pipeline"
+         xmlns:activiti="http://activiti.org/bpmn">
+
+  <startEvent id="start" name="Start Order Processing"/>
 
 <sequenceFlow id="flow1" sourceRef="start" targetRef="orderProcessingSplit"/>
 
@@ -195,14 +226,18 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 
 <sequenceFlow id="flow8" sourceRef="orderProcessingJoin" targetRef="fulfillOrder"/>
 <sequenceFlow id="flow9" sourceRef="fulfillOrder" targetRef="end"/>
+</process>
 ```
 
 ### Example 2: Notification Fan-Out
 
 ```xml
-<startEvent id="start"/>
+<process id="notificationFanout" name="Notification Fan-Out"
+         xmlns:activiti="http://activiti.org/bpmn">
 
-<sequenceFlow id="flow1" sourceRef="start" targetRef="notificationSplit"/>
+  <startEvent id="start"/>
+
+  <sequenceFlow id="flow1" sourceRef="start" targetRef="notificationSplit"/>
 
 <parallelGateway id="notificationSplit" name="Send Notifications"/>
 
@@ -245,14 +280,18 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <endEvent id="end"/>
 
 <sequenceFlow id="flow10" sourceRef="notificationJoin" targetRef="end"/>
+</process>
 ```
 
 ### Example 3: Data Aggregation
 
 ```xml
-<startEvent id="start"/>
+<process id="dataAggregation" name="Data Aggregation"
+         xmlns:activiti="http://activiti.org/bpmn">
 
-<sequenceFlow id="flow1" sourceRef="start" targetRef="dataFetchSplit"/>
+  <startEvent id="start"/>
+
+  <sequenceFlow id="flow1" sourceRef="start" targetRef="dataFetchSplit"/>
 
 <!-- Fetch data from multiple sources in parallel -->
 <parallelGateway id="dataFetchSplit" name="Fetch Data"/>
@@ -264,19 +303,19 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <serviceTask id="fetchFromDB"
               name="Fetch from Database"
               activiti:delegateExpression="${dataService.fetchFromDb()}"
-              activiti:resultVariableName="dbData"
+              activiti:resultVariable="dbData"
               activiti:async="true"/>
 
 <serviceTask id="fetchFromAPI"
               name="Fetch from External API"
               activiti:delegateExpression="${dataService.fetchFromApi()}"
-              activiti:resultVariableName="apiData"
+              activiti:resultVariable="apiData"
               activiti:async="true"/>
 
 <serviceTask id="fetchFromCache"
               name="Fetch from Cache"
               activiti:delegateExpression="${dataService.fetchFromCache()}"
-              activiti:resultVariableName="cacheData"
+              activiti:resultVariable="cacheData"
               activiti:async="true"/>
 
 <!-- Wait for all data sources -->
@@ -304,14 +343,18 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <endEvent id="end"/>
 
 <sequenceFlow id="flow9" sourceRef="aggregateData" targetRef="end"/>
+</process>
 ```
 
 ### Example 4: Parallel Approvals
 
 ```xml
-<startEvent id="start"/>
+<process id="parallelApprovals" name="Parallel Approvals"
+         xmlns:activiti="http://activiti.org/bpmn">
 
-<sequenceFlow id="flow1" sourceRef="start" targetRef="approvalSplit"/>
+  <startEvent id="start"/>
+
+  <sequenceFlow id="flow1" sourceRef="start" targetRef="approvalSplit"/>
 
 <parallelGateway id="approvalSplit" name="Request Approvals"/>
 
@@ -345,6 +388,7 @@ The Parallel Gateway (AND) splits the flow into **multiple concurrent paths** or
 <endEvent id="end"/>
 
 <sequenceFlow id="flow8" sourceRef="approvalJoin" targetRef="end"/>
+</process>
 ```
 
 ## Runtime API Usage
@@ -384,7 +428,7 @@ taskService.complete(taskId2);
 ## Best Practices
 
 1. **Balance Forks and Joins:** Ensure every split has a corresponding join
-2. **Use Async:** Prevent thread blocking in parallel branches
+2. **Use Async:** `activiti:async` on branch activities (or on the gateways) moves work to the async executor and keeps the calling thread free — see [Async Execution](../reference/async-execution.md)
 3. **Independent Branches:** Parallel tasks should not depend on each other
 4. **Error Handling:** Add boundary events for failures in branches
 5. **Timeout Management:** Prevent indefinite waiting at joins
@@ -399,7 +443,7 @@ taskService.complete(taskId2);
 - **Resource Contention:** Parallel branches competing for resources
 - **Deadlocks:** Circular dependencies between branches
 - **No Async:** Blocking threads in synchronous parallel execution
-- **Shared State:** Parallel branches modifying same variables
+- **Shared State:** `setVariable` writes to the process-instance scope, which every parallel branch shares — concurrent branches writing the same variable is a race. Keep branches on distinct variables, or use `setVariableLocal` for branch-private state (it is deleted with the branch's execution when the join fires)
 - **Missing Error Handling:** One failure stops all branches
 
 ## Related Documentation
@@ -409,6 +453,4 @@ taskService.complete(taskId2);
 - [Inclusive Gateway](./inclusive-gateway.md)
 - [Async Execution](../reference/async-execution.md)
 - [Multi-Instance](../reference/multi-instance.md)
-
----
 
