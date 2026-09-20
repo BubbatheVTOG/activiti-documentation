@@ -154,7 +154,7 @@ public class TaskAssignedNotifier implements ActivitiEventListener {
 | `class` | one of `class`, `delegateExpression`, `throwEvent` | Fully qualified class name of an `ActivitiEventListener` implementation |
 | `delegateExpression` | one of `class`, `delegateExpression`, `throwEvent` | EL expression (`${...}`) resolving to an `ActivitiEventListener` bean |
 | `throwEvent` | one of `class`, `delegateExpression`, `throwEvent` | `signal`, `globalSignal`, `message`, or `error` — throw a BPMN event instead of running custom code |
-| `signalName` | with `throwEvent="signal"` or `throwEvent="globalSignal"` | Name of the signal to throw (must match a `<signal>` / signal catch event) |
+| `signalName` | with `throwEvent="signal"` or `throwEvent="globalSignal"` | Name of the signal to throw — delivery requires a signal catch event registered under that name (in the same process instance for `signal`); with no matching subscription the throw is silently ignored. No `<signal>` declaration is required for the throw itself |
 | `messageName` | with `throwEvent="message"` | Name of the message to throw (must match a `<message>` / message catch event) |
 | `errorCode` | with `throwEvent="error"` | Error code propagated to a boundary error event or error event sub-process. A handler without a matching code accepts any error |
 | `events` | optional | Comma-separated `ActivitiEventType` names. Omit (or leave empty) to receive **all** event types. No spaces after commas |
@@ -227,7 +227,7 @@ Instead of running custom code, a listener can **throw a BPMN event** into the p
 | `throwEvent` value | Throws | Delivery scope |
 |--------------------|--------|----------------|
 | `signal` | A signal event | Signal catch events **of the same process instance** |
-| `globalSignal` | A signal event | **All** process instances subscribing to the signal (tenant-scoped when the event carries a process definition) |
+| `globalSignal` | A signal event | Signal subscribers across all tenants — except when the triggering event carries a process definition, in which case the lookup is filtered by that definition's tenant id (an event from a non-tenant, i.e. default-tenant, process reaches only default-tenant subscribers) |
 | `message` | A message event | Message catch events **of the same process instance** |
 | `error` | A BPMN error | Nearest boundary error event / error event sub-process (or the call activity parent) that matches the `errorCode` |
 
@@ -269,7 +269,7 @@ Instead of running custom code, a listener can **throw a BPMN event** into the p
 
 Assigning the task in `subProcess` dispatches `TASK_ASSIGNED`, which triggers the listener to throw the `Signal` signal. The non-interrupting boundary signal event on `subProcess` catches it and the process continues at `boundaryTask`.
 
-Because signal delivery is **process-instance scoped** for `throwEvent="signal"`, the triggering event must belong to an ongoing process instance — otherwise the engine fails the operation with `Cannot throw process-instance scoped signal, since the dispatched event is not part of an ongoing process instance`. Use `throwEvent="globalSignal"` to reach every process instance instead of one: if the triggering event carries a process definition with a non-empty tenant, only that tenant's subscribers are signaled; otherwise all signal subscribers across all tenants are reached.
+Because signal delivery is **process-instance scoped** for `throwEvent="signal"`, the triggering event must belong to an ongoing process instance — otherwise the engine fails the operation with `Cannot throw process-instance scoped signal, since the dispatched event is not part of an ongoing process instance`. Use `throwEvent="globalSignal"` to reach every process instance instead of one: when the triggering event carries a process definition, the subscription lookup is filtered by that definition's tenant id — including the empty (default) tenant, so an event dispatched from a non-tenant process reaches only default-tenant subscribers; only a triggering event with no process definition at all reaches subscribers across all tenants.
 
 **Keep the trigger narrow:** the listener fires on *every* `TASK_ASSIGNED` event of this process definition — assigning `boundaryTask` would throw the signal again and trigger the boundary once more. In a production process, choose an event type that occurs once per lifecycle (or use a custom listener that filters, e.g. by activity id) instead of a broad event on a re-entrant path.
 
@@ -342,7 +342,7 @@ Message delivery is also **process-instance scoped** and requires the triggering
 
 The engine resolves the execution from the triggering event's `executionId` and propagates the error from there. If the event carries no execution (or the execution can no longer be found), the operation fails with `No execution context active and event is not related to an execution. No compensation event can be thrown.`. Matching follows the usual BPMN error rules: a handler whose `errorCode` equals the thrown code matches, and a handler **without** an error code accepts any error. A `errorRef` that names a declared `<error>` element is resolved to that element's `errorCode`. If no matching handler exists in the process (or, for called processes, in the parent process), a `BpmnError` is raised — the assignment operation fails and no state change is committed.
 
-Here the boundary error event is **interrupting** (the default), so assigning `userTask` cancels the task and the process ends. If the process had another task whose assignment would re-trigger the listener, the second throw would fail with a `BpmnError` unless an error handler exists on that path — scope the trigger event type accordingly.
+Note that `cancelActivity` has no effect on error boundaries: the converter forces it to `false` for them, and the engine's parse handler still builds the boundary behavior as interrupting (hard-coded), so assigning `userTask` always cancels the task (the throwing execution is cancelled with a boundary-interrupting reason) and the process continues at the boundary's outgoing flow — which ends it in this model. If the process had another task whose assignment would re-trigger the listener, the second throw would fail with a `BpmnError` unless an error handler exists on that path — scope the trigger event type accordingly.
 
 **All four throw-variants are fail-on-exception listeners**: if delivery fails, the engine operation that dispatched the triggering event is aborted.
 
