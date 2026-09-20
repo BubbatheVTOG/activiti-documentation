@@ -24,8 +24,8 @@ Service Tasks represent **automated work** performed by the system, such as call
 </bpmn:process>
 ```
 
-**BPMN 2.0 Standard:** Fully Supported  
-**Activiti Extensions:** Rich integration capabilities
+- **BPMN element:** `<serviceTask>`
+- **Activiti extensions:** Class, delegate-expression, connector, async, retry, listener, and field configuration
 
 ## Key Features
 
@@ -40,8 +40,8 @@ Service Tasks represent **automated work** performed by the system, such as call
 - **Delegate Expression** - Spring bean integration
 - **Expression** - EL expression execution
 - **Field Injection** - Dependency injection
-- **Operation Reference** - Connector support
-- **DMN Integration** - Decision engine
+- **Operation Reference** - BPMN web-service operation
+- **External DMN Integration** - Decision evaluation through a connector
 - **Mail Task** - Email sending
 - **Async Execution** - Background jobs
 - **Custom Properties** - Metadata extension

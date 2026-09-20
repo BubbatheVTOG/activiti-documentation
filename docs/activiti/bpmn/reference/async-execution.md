@@ -7,7 +7,7 @@ description: "Complete guide to asynchronous execution in Activiti - background 
 
 # Async Execution
 
-Asynchronous execution allows activities to run in the **background** using Activiti's job executor, preventing blocking of process engine threads and improving scalability.
+Asynchronous execution creates a persisted job and lets Activiti's async executor continue the activity in a worker thread. This introduces a transaction boundary and enables configured retry behavior.
 
 ## Overview
 
@@ -25,29 +25,25 @@ Asynchronous execution allows activities to run in the **background** using Acti
 </bpmn:process>
 ```
 
-**Key Benefits:**
-- Non-blocking execution
-- Better resource utilization
-- Improved scalability
-- Automatic retry on failure
-- Job persistence across restarts
+**Key behaviors:**
+- Persists work before a worker executes it.
+- Moves execution outside the thread that reached the async continuation.
+- Uses the configured executor pool and acquisition settings.
+- Retries failed jobs according to the activity or executor configuration.
+- Retains pending jobs across application restarts when the database is preserved.
 
 ## When to Use Async
 
-### **Use Async For:**
-- Long-running operations (> 1 second)
-- External system calls (APIs, databases)
-- Batch processing
-- Email/SMS notifications
-- File processing
-- Complex calculations
-- Operations that may fail and need retry
+### Use async execution for
+- Work that should continue in an executor thread.
+- External calls or batch work that needs configured retries.
+- Activities that benefit from a transaction boundary before execution.
+- Work whose caller does not require same-transaction completion.
 
-### ❌ **Don't Use Async For:**
-- Simple variable assignments
-- Fast in-memory operations
-- Critical path activities requiring immediate completion
-- Operations that must complete within the same transaction
+### Keep execution synchronous for
+- Small in-memory operations where queueing adds no benefit.
+- Activities that must complete in the current transaction.
+- Paths whose caller requires the result before the transaction can continue.
 
 ## Configuration
 

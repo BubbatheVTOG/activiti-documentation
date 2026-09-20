@@ -857,16 +857,16 @@ Add boundary events for rule execution failures:
 
 ## Best Practices
 
-1. **Always Specify `activiti:class`**: No default behavior exists without it
-2. **Implement `BusinessRuleTaskDelegate`**: Required interface for custom rules
-3. **Thread Safety**: Ensure implementations are thread-safe for async execution
-4. **Error Handling**: Add boundary events for rule execution failures
-5. **Result Variables**: Always store outputs for audit and downstream use
-6. **External Engines**: Integrate Drools/DMN in your custom implementation
-7. **Testing**: Unit test rule logic separately from process flow
-8. **Logging**: Add execution listeners for monitoring
-9. **Versioning**: Track rule changes separately from process changes
-10. **DMN Decisions**: Use Service Task + Connector for DMN (see Pattern 3 above)
+1. **Specify `activiti:class`:** A business rule task has no default behavior without it.
+2. **Implement `BusinessRuleTaskDelegate`:** Custom rule classes must implement this interface.
+3. **Protect shared state:** Make implementations thread-safe before enabling async execution.
+4. **Model failure handling:** Add boundary events for rule-execution failures.
+5. **Store required results:** Save outputs needed for auditing or downstream work.
+6. **Isolate external engines:** Keep Drools or DMN integration inside the custom implementation.
+7. **Test rule logic separately:** Unit test rules independently of process flow.
+8. **Add proportionate monitoring:** Use listeners or application logging where operators need visibility.
+9. **Version rules independently:** Track rule and process changes without coupling their release cycles.
+10. **Use connectors for DMN decisions:** See [Pattern 3](#pattern-3-dmn-decision-integration-via-service-task-recommended).
 
 ## Common Pitfalls
 
